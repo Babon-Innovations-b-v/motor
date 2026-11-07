@@ -1,0 +1,222 @@
+\begin{thebibliography}{29}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Uhlrich et~al.(2023)Uhlrich, Falisse, Kidzi{\'n}ski, Muccini, Ko,
+  Chaudhari, Hicks, and Delp]{uhlrich2023opencap}
+Scott~D. Uhlrich, Antoine Falisse, {\L}ukasz Kidzi{\'n}ski, Julie Muccini,
+  Michael Ko, Akshay~S. Chaudhari, Jennifer~L. Hicks, and Scott~L. Delp.
+\newblock {OpenCap}: Human movement dynamics from smartphone videos.
+\newblock \emph{PLOS Computational Biology}, 19\penalty0 (10):\penalty0
+  e1011462, 2023.
+
+\bibitem[Gilon et~al.(2026)Gilon, Miller, and Uhlrich]{gilon2026monocular}
+Selim Gilon, Emily~Y. Miller, and Scott~D. Uhlrich.
+\newblock {OpenCap Monocular}: {3D} human kinematics and musculoskeletal
+  dynamics from a single smartphone video.
+\newblock \emph{arXiv preprint arXiv:2603.24733}, 2026.
+
+\bibitem[Peiffer et~al.(2025)Peiffer, Shah, Djuraskovic, Anarwala, Abdou,
+  Patel, Jayabalan, Pennicooke, and Cotton]{peiffer2025pbl}
+J.~D. Peiffer, Kunal Shah, Irina Djuraskovic, Shawana Anarwala, Kayan Abdou,
+  Rujvee Patel, Prakash Jayabalan, Brenton Pennicooke, and R.~James Cotton.
+\newblock Portable biomechanics laboratory: Clinically accessible movement
+  analysis from a handheld smartphone.
+\newblock \emph{arXiv preprint arXiv:2507.08268}, 2025.
+
+\bibitem[Kardolus et~al.(2026)Kardolus, Hendriks, and
+  Jansen]{kardolus2026direct}
+Joey~P{\'a}olo Kardolus, Daan Hendriks, and Jaap Jansen.
+\newblock Direct clinical joint angle extraction from parametric body model
+  rotation matrices.
+\newblock \emph{arXiv preprint arXiv:2607.17639}, 2026.
+
+\bibitem[Delp et~al.(2007)Delp, Anderson, Arnold, Loan, Habib, John,
+  Guendelman, and Thelen]{delp2007opensim}
+Scott~L. Delp, Frank~C. Anderson, Allison~S. Arnold, Peter Loan, Ayman Habib,
+  Chand~T. John, Eran Guendelman, and Darryl~G. Thelen.
+\newblock {OpenSim}: Open-source software to create and analyze dynamic
+  simulations of movement.
+\newblock \emph{IEEE Transactions on Biomedical Engineering}, 54\penalty0
+  (11):\penalty0 1940--1950, 2007.
+
+\bibitem[Rajagopal et~al.(2016)Rajagopal, Dembia, DeMers, Delp, Hicks, and
+  Delp]{rajagopal2016fullbody}
+Apoorva Rajagopal, Christopher~L. Dembia, Matthew~S. DeMers, Denny~D. Delp,
+  Jennifer~L. Hicks, and Scott~L. Delp.
+\newblock Full-body musculoskeletal model for muscle-driven simulation of human
+  gait.
+\newblock \emph{IEEE Transactions on Biomedical Engineering}, 63\penalty0
+  (10):\penalty0 2068--2079, 2016.
+\newblock \doi{10.1109/TBME.2016.2586891}.
+
+\bibitem[Dembia et~al.(2020)Dembia, Bianco, Falisse, Hicks, and
+  Delp]{dembia2020moco}
+Christopher~L. Dembia, Nicholas~A. Bianco, Antoine Falisse, Jennifer~L. Hicks,
+  and Scott~L. Delp.
+\newblock {OpenSim Moco}: Musculoskeletal optimal control.
+\newblock \emph{PLOS Computational Biology}, 16\penalty0 (12):\penalty0
+  e1008493, 2020.
+\newblock \doi{10.1371/journal.pcbi.1008493}.
+
+\bibitem[Cotton(2024)]{cotton2024differentiable}
+R.~James Cotton.
+\newblock Differentiable biomechanics unlocks opportunities for markerless
+  motion capture.
+\newblock \emph{arXiv preprint arXiv:2402.17192}, 2024.
+
+\bibitem[Cotton(2025)]{cotton2025kintwin}
+R.~James Cotton.
+\newblock {KinTwin}: Imitation learning with torque and muscle driven
+  biomechanical models enables precise replication of able-bodied and impaired
+  movement from markerless motion capture.
+\newblock \emph{arXiv preprint arXiv:2505.13436}, 2025.
+
+\bibitem[Cotton et~al.(2026)Cotton, Peiffer, Williamson, Leske, and
+  Pavlakos]{cotton2026b3d}
+R.~James Cotton, J.~D. Peiffer, Lucinda Williamson, John Leske, and Georgios
+  Pavlakos.
+\newblock Biomechanical {3D} body: Self-supervised distillation of
+  biomechanical pose from a {3D} body foundation model.
+\newblock \emph{arXiv preprint arXiv:2608.29928}, 2026.
+
+\bibitem[Caggiano et~al.(2022)Caggiano, Wang, Durandau, Sartori, and
+  Kumar]{caggiano2022myosuite}
+Vittorio Caggiano, Huawei Wang, Guillaume Durandau, Massimo Sartori, and Vikash
+  Kumar.
+\newblock {MyoSuite}: A contact-rich simulation suite for musculoskeletal motor
+  control.
+\newblock \emph{arXiv preprint arXiv:2205.13600}, 2022.
+
+\bibitem[Al-Hafez et~al.(2023)Al-Hafez, Zhao, Peters, and
+  Tateo]{alhafez2023locomujoco}
+Firas Al-Hafez, Guoping Zhao, Jan Peters, and Davide Tateo.
+\newblock {LocoMuJoCo}: A comprehensive imitation learning benchmark for
+  locomotion.
+\newblock \emph{arXiv preprint arXiv:2311.02496}, 2023.
+
+\bibitem[Todorov et~al.(2012)Todorov, Erez, and Tassa]{todorov2012mujoco}
+Emanuel Todorov, Tom Erez, and Yuval Tassa.
+\newblock {MuJoCo}: A physics engine for model-based control.
+\newblock In \emph{IEEE/RSJ International Conference on Intelligent Robots and
+  Systems (IROS)}, pages 5026--5033, 2012.
+
+\bibitem[Li et~al.(2026)Li, Wang, Ziliotto, Simos, Kovecses, Durandau, and
+  Mathis]{li2026musclemimic}
+Chengkun Li, Cheryl Wang, Bianca Ziliotto, Merkourios Simos, Jozsef Kovecses,
+  Guillaume Durandau, and Alexander Mathis.
+\newblock Towards embodied {AI} with {MuscleMimic}: Unlocking full-body
+  musculoskeletal motor learning at scale.
+\newblock \emph{arXiv preprint arXiv:2603.25544}, 2026.
+
+\bibitem[Wei et~al.(2026)Wei, Zuo, Zhuang, Gong, Liu, and Sui]{wei2026mshuman}
+Yunyue Wei, Chenhui Zuo, Shanning Zhuang, Haixin Gong, Yaming Liu, and Yanan
+  Sui.
+\newblock Scaling whole-body human musculoskeletal behavior emulation for
+  specificity and diversity.
+\newblock \emph{arXiv preprint arXiv:2603.29332}, 2026.
+
+\bibitem[Chauhan et~al.(2026)Chauhan, Brahmbhatt, and
+  Vashista]{chauhan2026fatigue}
+Jenishkumar Chauhan, Samarth Brahmbhatt, and Vineet Vashista.
+\newblock Towards real-world identification of fatigued muscle groups via
+  musculoskeletal simulation.
+\newblock \emph{arXiv preprint arXiv:2605.26151}, 2026.
+
+\bibitem[Verma(2025)]{verma2025emg2tendon}
+Sagar Verma.
+\newblock emg2tendon: From {sEMG} signals to tendon control in musculoskeletal
+  hands.
+\newblock \emph{arXiv preprint arXiv:2508.08269}, 2025.
+
+\bibitem[{The Newton Developers}(2026)]{newton}
+{The Newton Developers}.
+\newblock {Newton}: a {GPU}-accelerated physics simulation engine, 2026.
+\newblock URL \url{https://github.com/newton-physics/newton}.
+\newblock Version 1.6.1 used here (SolverMuJoCo). Apache-2.0.
+
+\bibitem[{Google DeepMind} and {NVIDIA}(2026)]{mujocowarp}
+{Google DeepMind} and {NVIDIA}.
+\newblock {MuJoCo Warp}: a {GPU}-optimized version of the {MuJoCo} physics
+  simulator, 2026.
+\newblock URL \url{https://github.com/google-deepmind/mujoco_warp}.
+\newblock Apache-2.0.
+
+\bibitem[{NVIDIA}(2026)]{gemx}
+{NVIDIA}.
+\newblock {GEM-X}: Monocular whole-body {3D} human pose estimation using the
+  {SOMA} body model, 2026.
+\newblock URL \url{https://github.com/NVlabs/GEM-X}.
+\newblock Apache-2.0.
+
+\bibitem[Li et~al.(2025)Li, Cao, Zhang, Rempe, Kautz, Iqbal, and
+  Yuan]{li2025genmo}
+Jiefeng Li, Jinkun Cao, Haotian Zhang, Davis Rempe, Jan Kautz, Umar Iqbal, and
+  Ye~Yuan.
+\newblock {GENMO}: A {GENeralist} model for human {MOtion}.
+\newblock \emph{arXiv preprint arXiv:2505.01425}, 2025.
+
+\bibitem[Saito et~al.(2026)Saito, Li, de~Ruyter, Guerrero,
+  et~al.]{saito2026soma}
+Jun Saito, Jiefeng Li, Michael de~Ruyter, Miguel Guerrero, et~al.
+\newblock {SOMA}: Unifying parametric human body models.
+\newblock \emph{arXiv preprint arXiv:2603.16858}, 2026.
+
+\bibitem[Wang et~al.(2025)]{wang2025moge2}
+Ruicheng Wang et~al.
+\newblock {MoGe-2}: Accurate monocular geometry with metric scale and sharp
+  details.
+\newblock \emph{arXiv preprint arXiv:2507.02546}, 2025.
+
+\bibitem[Holzbaur et~al.(2005)Holzbaur, Murray, and Delp]{holzbaur2005upper}
+Katherine R.~S. Holzbaur, Wendy~M. Murray, and Scott~L. Delp.
+\newblock A model of the upper extremity for simulating musculoskeletal surgery
+  and analyzing neuromuscular control.
+\newblock \emph{Annals of Biomedical Engineering}, 33\penalty0 (6):\penalty0
+  829--840, 2005.
+\newblock \doi{10.1007/s10439-005-3320-7}.
+
+\bibitem[Saul et~al.(2015)Saul, Hu, Goehler, Vidt, Daly, Velisar, and
+  Murray]{saul2015benchmarking}
+Katherine~R. Saul, Xiao Hu, Craig~M. Goehler, Meghan~E. Vidt, Melissa Daly,
+  Anca Velisar, and Wendy~M. Murray.
+\newblock Benchmarking of dynamic simulation predictions in two software
+  platforms using an upper limb musculoskeletal model.
+\newblock \emph{Computer Methods in Biomechanics and Biomedical Engineering},
+  18\penalty0 (13):\penalty0 1445--1458, 2015.
+\newblock \doi{10.1080/10255842.2014.916698}.
+
+\bibitem[Zakka(2024)]{mink}
+Kevin Zakka.
+\newblock {mink}: Python inverse kinematics based on {MuJoCo}, 2024.
+\newblock URL \url{https://github.com/kevinzakka/mink}.
+\newblock Apache-2.0.
+
+\bibitem[Hicks et~al.(2015)Hicks, Uchida, Seth, Rajagopal, and
+  Delp]{hicks2015model}
+Jennifer~L. Hicks, Thomas~K. Uchida, Ajay Seth, Apoorva Rajagopal, and Scott~L.
+  Delp.
+\newblock Is my model good enough? best practices for verification and
+  validation of musculoskeletal models and simulations of movement.
+\newblock \emph{Journal of Biomechanical Engineering}, 137\penalty0
+  (2):\penalty0 020905, 2015.
+\newblock \doi{10.1115/1.4029304}.
+
+\bibitem[Macklin(2022)]{warp}
+Miles Macklin.
+\newblock {Warp}: A high-performance {Python} framework for {GPU} simulation
+  and graphics, 2022.
+\newblock URL \url{https://github.com/NVIDIA/warp}.
+\newblock Version 1.18.0 used here. Apache-2.0 since 1.6.2.
+
+\bibitem[Colley(2026)]{mujocowarp1835}
+M.~Colley.
+\newblock Direct {MyoSuite} {CPU}/{CUDA} muscle rollouts drift at the wrist
+  with contacts disabled.
+\newblock {MuJoCo Warp} issue 1835, 2026.
+\newblock URL \url{https://github.com/google-deepmind/mujoco_warp/issues/1835}.
+
+\end{thebibliography}
