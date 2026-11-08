@@ -5,29 +5,6 @@
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
 
-\bibitem[Delp et~al.(2007)Delp, Anderson, Arnold, Loan, Habib, John,
-  Guendelman, and Thelen]{delp2007opensim}
-Scott~L. Delp, Frank~C. Anderson, Allison~S. Arnold, Peter Loan, Ayman Habib,
-  Chand~T. John, Eran Guendelman, and Darryl~G. Thelen.
-\newblock {OpenSim}: Open-source software to create and analyze dynamic
-  simulations of movement.
-\newblock \emph{IEEE Transactions on Biomedical Engineering}, 54\penalty0
-  (11):\penalty0 1940--1950, 2007.
-
-\bibitem[Seth et~al.(2018)Seth, Hicks, Uchida, Habib, Dembia, Dunne,
-  et~al.]{seth2018opensim}
-Ajay Seth, Jennifer~L. Hicks, Thomas~K. Uchida, Ayman Habib, Christopher~L.
-  Dembia, James~J. Dunne, et~al.
-\newblock {OpenSim}: Simulating musculoskeletal dynamics and neuromuscular
-  control to study human and animal movement.
-\newblock \emph{PLOS Computational Biology}, 14\penalty0 (7):\penalty0
-  e1006223, 2018.
-
-\bibitem[Winter(2009)]{winter2009biomechanics}
-David~A. Winter.
-\newblock \emph{Biomechanics and Motor Control of Human Movement}.
-\newblock Wiley, 4 edition, 2009.
-
 \bibitem[{NVIDIA}(2026)]{gemx}
 {NVIDIA}.
 \newblock {GEM-X}: Monocular whole-body {3D} human pose estimation using the
@@ -60,6 +37,29 @@ Davis Rempe, Mathis Petrovich, Ye~Yuan, Haotian Zhang, Xue~Bin Peng, et~al.
   simulator, 2026.
 \newblock URL \url{https://github.com/google-deepmind/mujoco_warp}.
 \newblock Apache-2.0.
+
+\bibitem[Delp et~al.(2007)Delp, Anderson, Arnold, Loan, Habib, John,
+  Guendelman, and Thelen]{delp2007opensim}
+Scott~L. Delp, Frank~C. Anderson, Allison~S. Arnold, Peter Loan, Ayman Habib,
+  Chand~T. John, Eran Guendelman, and Darryl~G. Thelen.
+\newblock {OpenSim}: Open-source software to create and analyze dynamic
+  simulations of movement.
+\newblock \emph{IEEE Transactions on Biomedical Engineering}, 54\penalty0
+  (11):\penalty0 1940--1950, 2007.
+
+\bibitem[Seth et~al.(2018)Seth, Hicks, Uchida, Habib, Dembia, Dunne,
+  et~al.]{seth2018opensim}
+Ajay Seth, Jennifer~L. Hicks, Thomas~K. Uchida, Ayman Habib, Christopher~L.
+  Dembia, James~J. Dunne, et~al.
+\newblock {OpenSim}: Simulating musculoskeletal dynamics and neuromuscular
+  control to study human and animal movement.
+\newblock \emph{PLOS Computational Biology}, 14\penalty0 (7):\penalty0
+  e1006223, 2018.
+
+\bibitem[Winter(2009)]{winter2009biomechanics}
+David~A. Winter.
+\newblock \emph{Biomechanics and Motor Control of Human Movement}.
+\newblock Wiley, 4 edition, 2009.
 
 \bibitem[Loper et~al.(2015)Loper, Mahmood, Romero, Pons-Moll, and
   Black]{loper2015smpl}
@@ -234,23 +234,26 @@ John~D. Owens, Mike Houston, David Luebke, Simon Green, John~E. Stone, and
 \newblock {GPU} computing.
 \newblock \emph{Proceedings of the IEEE}, 96\penalty0 (5):\penalty0 879--899,
   2008.
+\newblock \doi{10.1109/JPROC.2008.917757}.
 
 \bibitem[Krizhevsky et~al.(2012)Krizhevsky, Sutskever, and
   Hinton]{krizhevsky2012imagenet}
 Alex Krizhevsky, Ilya Sutskever, and Geoffrey~E. Hinton.
 \newblock {ImageNet} classification with deep convolutional neural networks.
-\newblock In \emph{Advances in Neural Information Processing Systems},
-  volume~25, pages 1097--1105, 2012.
+\newblock In F.~Pereira, C.~J.~C. Burges, L.~Bottou, and K.~Q. Weinberger,
+  editors, \emph{Advances in Neural Information Processing Systems 25}, pages
+  1097--1105. Curran Associates, Inc., 2012.
 
 \bibitem[Makoviychuk et~al.(2021)Makoviychuk, Wawrzyniak, Guo, Lu, Storey,
   Macklin, Hoeller, Rudin, Allshire, Handa, and State]{makoviychuk2021isaacgym}
 Viktor Makoviychuk, Lukasz Wawrzyniak, Yunrong Guo, Michelle Lu, Kier Storey,
   Miles Macklin, David Hoeller, Nikita Rudin, Arthur Allshire, Ankur Handa, and
   Gavriel State.
-\newblock {Isaac Gym}: High performance {GPU}-based physics simulation for
+\newblock {Isaac Gym}: High performance {GPU} based physics simulation for
   robot learning.
-\newblock In \emph{Proceedings of the Neural Information Processing Systems
-  Track on Datasets and Benchmarks}, 2021.
+\newblock In Joaquin Vanschoren and Sai-Kit Yeung, editors, \emph{Proceedings
+  of the Neural Information Processing Systems Track on Datasets and
+  Benchmarks}, volume~1, 2021.
 \newblock arXiv:2108.10470.
 
 \bibitem[Li et~al.(2025)Li, Cao, Zhang, Rempe, Kautz, Iqbal, and
