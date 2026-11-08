@@ -46,11 +46,12 @@
 \maketitle
 
 \begin{abstract}
-\noindent MOTOR is an open chain from one ordinary video to the ground reaction force under each foot, the joint
-moments and the force in each of 416 muscles, on one GPU. A monocular estimator gives a parametric body per frame; a
-full-body musculoskeletal model is fitted to it and stood on the floor the camera sees; a residual reduction makes the
-movement agree with the ground; and a two-stage static optimisation gives the ground reaction force, then the muscle
-activations. Every stage runs on Newton and MuJoCo Warp, deterministically. It takes a median 66\,s per trial on one
+\noindent MOTOR is an open musculoskeletal solver on one GPU. From any moving body given as a skin mesh, segment
+rotation matrices and joint centres (from video, a motion generator or motion capture) it gives the ground reaction force under each foot, the joint moments and the force in each of
+416 muscles: a full-body musculoskeletal model is fitted inside the skin and stood on the ground, a residual
+reduction makes the movement agree with the ground, and a two-stage static optimisation gives the ground reaction
+force, then the muscle activations, all on Newton and MuJoCo Warp, deterministically. We validate it as a monocular
+pipeline, one ordinary video through an off-the-shelf body estimator. It takes a median 66\,s per trial on one
 card, where OpenCap's recorded solves take 44 to 70\,min on the CPU. On OpenCap's LabValidation cohort (715 of 720
 single-camera inputs) the matched joint angle error is 5.16\dg{} (centred 3.06\dg). On the five subjects never used
 to choose a setting, the vertical force per foot follows the plates with a median correlation of 0.78 and 0.79, and
@@ -78,24 +79,27 @@ MyoSuite \cite{caggiano2022myosuite} provides the muscle model, LocoMuJoCo \cite
 \cite{wei2026mshuman} run bodies of 400 to 700 muscles on MuJoCo Warp, and static optimisation on MuJoCo models has
 run on the CPU \cite{chauhan2026fatigue,verma2025emg2tendon}.
 
-MOTOR's own part is narrow, and its case is speed and depth: the whole chain from video to muscle forces (fit,
-footing, residual reduction, ground reaction force per foot, two-stage static optimisation) on MyoFullBody's 416
-muscles, every stage on one GPU in about a minute per trial, bit-for-bit repeatable, and validated on a public cohort
-on forces, moments and muscles as well as angles. To our knowledge it is the
-first open chain from video to muscle forces on Newton \cite{newton} and MuJoCo Warp \cite{mujocowarp}. It is the
-sim body of SCORE, an open environment synthesis framework, run here on real video.
+MOTOR's own part is narrow, and its case is generality, speed and depth. It is a solver, not a video pipeline: from
+any body given as a skin mesh, segment rotations and joint centres, a person filmed with one phone or a generated
+motion, it gives the whole solve on MyoFullBody's 416 muscles on one GPU in about a minute per trial, bit-for-bit
+repeatable. To our knowledge it is the first open solver from a body's motion to muscle forces on Newton
+\cite{newton} and MuJoCo Warp \cite{mujocowarp}. In SCORE, an open environment synthesis framework, it solves Kimodo's
+generated motion \cite{rempe2026kimodo}; here it is validated as a monocular pipeline on forces, moments and muscles.
+% Kimodo clips as input: score/stages/sim_body/CLAUDE.md (the sim body stage solves each scene's clips).
 % Novelty search and allowed claim: #98 comment "Newton novelty" (2026-11-06).
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/pipeline.pdf}
-\caption{MOTOR's chain from one video to muscle forces. The stages in blue run every frame at once on one GPU.}
+\caption{MOTOR's solve from a body (a skin mesh, segment rotations and joint centres; here from one video) to muscle
+forces. The stages in blue run every frame at once on one GPU.}
 \label{fig:pipeline}
 \end{figure}
 
 \section{Method}
 
-\paragraph{From video to a body.} GEM-X \cite{gemx,li2025genmo} turns the video into a SOMA body
+\paragraph{The input body.} A skin mesh, segment rotations and joint centres per frame; in SCORE from Kimodo, here
+from video: GEM-X \cite{gemx,li2025genmo} turns the video into a SOMA body
 \cite{saito2026soma} per frame at 30\,Hz, keeping its identity, root translation and global segment rotations. SOMA
 is the truth: its shape and pose are never changed. GEM-X is given the camera's field of view that MoGe-2
 \cite{wang2025moge2} estimates from the same video, and its own contact post-process holds the static feet. Its world
@@ -243,16 +247,16 @@ hardware differ). The run took at most 24 cards at once and EUR 29.5.
 % paper/evidence/sim-body/labval-final-2026-11-07.txt ("signed offsets", "residuals", "EMG per channel").
 
 Four limits are measured and open. The elbows come out 21 to 24\dg{} straighter than the lab's in every envelope
-trial (centred error 3 to 6\dg). The offset is GEM-X's arm estimate, not the sim body's: on 540 walking arm-trials
-GEM-X's own elbow is a median 18.5\dg{} straighter than the lab's markers, and the sim body follows it within 2.5\dg. The pelvis tilt is biased
-by about 5\dg{} (one direction in 82 of 89 envelope trials). The pelvis residual stays above OpenSim's limits (2\% body weight, 1\% weight times
-centre-of-mass height; medians 7.0\% and 8.9\%), so the forces are not yet dynamically consistent with the movement. The activation pattern is
+trial (centred error 3 to 6\dg). The offset is GEM-X's: on 540 walking arm-trials its elbow is a median 18.5\dg{}
+straighter than the markers, and MOTOR follows it within 2.5\dg. The pelvis tilt is biased
+by about 5\dg{} (one direction in 82 of 89 envelope trials). The pelvis residual stays above OpenSim's limits (2\% weight, 1\% weight times height;
+medians 7.0\% and 8.9\%): the forces are not yet consistent with the movement. The activation pattern is
 still partly off: rectus femoris does not follow its EMG ($r=-0.08$) and gluteus medius agrees on or off on only half
 the frames. LabValidation is one small healthy cohort.
 
 \section{Conclusion}
 
-MOTOR gives foot forces, moments and 416 muscle forces from one video in a minute per trial on one GPU.
+MOTOR solves foot forces, moments and 416 muscle forces from any moving body in a minute per trial on one GPU.
 
 % Every float of the main body is placed before this point, so the page count below is honest.
 \FloatBarrier

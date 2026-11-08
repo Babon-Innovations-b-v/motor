@@ -1,4 +1,4 @@
-\begin{thebibliography}{29}
+\begin{thebibliography}{30}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -144,6 +144,12 @@ Sagar Verma.
   simulator, 2026.
 \newblock URL \url{https://github.com/google-deepmind/mujoco_warp}.
 \newblock Apache-2.0.
+
+\bibitem[Rempe et~al.(2026)Rempe, Petrovich, Yuan, Zhang, Peng,
+  et~al.]{rempe2026kimodo}
+Davis Rempe, Mathis Petrovich, Ye~Yuan, Haotian Zhang, Xue~Bin Peng, et~al.
+\newblock {Kimodo}: Scaling controllable human motion generation.
+\newblock \emph{arXiv preprint arXiv:2603.15546}, 2026.
 
 \bibitem[{NVIDIA}(2026)]{gemx}
 {NVIDIA}.
