@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# This repository's own pre-commit step. Git runs .claude/hooks/pre-commit (core.hooksPath .claude/hooks, set by
+# .claude/scripts/bootstrap.sh), which runs the shared torn-commit guard and then this file.
+#
+# The shared harness is score's. .claude/harness.lock names every file this repository copies from score and the
+# sha256 of each; a staged edit of one is checked here (score reachable, score main still at the lock, the edit names
+# no fact of this repository), and the commit-msg hook then carries it to score main. harness-sync.py holds the logic.
+set -euo pipefail
+root="$(git rev-parse --show-toplevel)"
+if command -v python3 >/dev/null 2>&1 && [ -f "$root/.claude/scripts/harness-sync.py" ]; then
+    python3 "$root/.claude/scripts/harness-sync.py" --staged --repo "$root" || exit 1
+fi

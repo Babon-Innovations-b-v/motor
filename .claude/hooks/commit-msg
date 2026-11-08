@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# The git commit-msg hook, found here because core.hooksPath points at
+# .claude/hooks (set relative, so each worktree runs its own checkout's copy).
+#
+# ONE PURPOSE: carry this commit's edit of shared harness files to the
+# repository `.claude/harness.lock` names, before the commit exists. git has
+# the final message by now and the commit is not made yet, so a refusal here
+# (score unreachable, score moved, a fact score must not hold, score's own
+# checks red, the push refused) aborts the commit and nothing lands anywhere.
+# The thinking lives in .claude/scripts/harness-sync.py (--contribute); the
+# post-commit hook then puts the new lock into the commit.
+#
+# FAILURE POLICY: no repo, no lock, no script, no python3 -> exit 0. Every
+# refusal the script makes exits 1. TORN_GUARD=0 does NOT disarm it: the
+# shared files and their lock may not drift. `git commit --no-verify` skips it,
+# which is a human at a terminal; a session reaching for it is blocked by
+# .claude/hooks/commit_guard.py.
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+script="$root/.claude/scripts/harness-sync.py"
+[ -f "$root/.claude/harness.lock" ] && [ -f "$script" ] || exit 0
+command -v python3 >/dev/null 2>&1 || exit 0
+exec python3 "$script" --contribute "$1" --repo "$root"

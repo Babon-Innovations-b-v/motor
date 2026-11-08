@@ -1,0 +1,15 @@
+{
+  "_comment": "The one place repo, board and people are named. Filled by .claude/scripts/setup-github.py; edit by hand for people and areas. Scripts and hooks read this, nothing is hard-coded.",
+  "repo": "Babon-Innovations-b-v/motor",
+  "owner": "JoeyKardolus",
+  "project": {
+    "number": 0,
+    "owner": ""
+  },
+  "backlog_prd": null,
+  "area_label_prefix": "area:",
+  "areas": [],
+  "people": {
+    "JoeyKardolus": "JoeyKardolus"
+  }
+}

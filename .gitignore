@@ -1,0 +1,32 @@
+# Caches and build output
+__pycache__/
+*.py[oc]
+*.egg-info
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+
+# OS and editor
+.DS_Store
+*:Zone.Identifier
+.idea/
+.vscode/*
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+!.env.example
+.venv/
+
+# Session state: per-clone, regenerable
+.claude/worktrees/
+.claude/state/
+tmp/
+
+# Claude's memory: private working notes, never pushed (the repository is public)
+.claude/memory/

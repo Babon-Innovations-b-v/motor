@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# The git post-commit hook, found here because core.hooksPath points at
+# .claude/hooks (set relative, so each worktree runs its own checkout's copy).
+#
+# ONE PURPOSE: when the commit-msg hook carried a shared harness edit to score,
+# add the lock naming score's new commit to the commit just made. git builds a
+# commit's tree before the commit-msg hook runs, so the lock cannot be staged
+# there. harness-sync.py --seal rewrites HEAD with plumbing (no hook runs twice)
+# and does nothing when commit-msg left no record.
+#
+# FAILURE POLICY: a post-commit hook cannot stop a commit. No repo, no script,
+# no python3 -> nothing. A seal that fails leaves the lock written in the
+# working tree, so the next commit carries it.
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+script="$root/.claude/scripts/harness-sync.py"
+[ -f "$script" ] || exit 0
+command -v python3 >/dev/null 2>&1 || exit 0
+python3 "$script" --seal --repo "$root" || true
+exit 0

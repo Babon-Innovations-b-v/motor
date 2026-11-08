@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""The push gate: a push to main is refused when the test rule or a touched module's test fails.
+
+Git runs .claude/hooks/pre-push (core.hooksPath .claude/hooks), which hands its arguments and the push lines on stdin
+to this file. On a push to refs/heads/main, in a checkout of the commit pushed (this one when it is that commit with
+nothing changed, else a temporary worktree of it, removed afterwards):
+
+1. the test rule's guard (tools/test_rule/check.py) over the whole tree; a fault refuses the push;
+2. the one test file of each module the pushed commits touch (`git diff --name-only <remote sha>..<local sha>`), run
+   by `make tests TESTS=...` (each at the Makefile's TEST_SECONDS), at most JOBS at once, the whole run inside
+   `motor.pushTestSeconds` (default 600), which it prints; a failure or the budget running out refuses the push. A
+   test file `MAY_SKIP` marks for the cluster gate (it needs a GPU) is left to that gate and named.
+
+Deletions, tags and other branches pass at once.
+"""
+import os
+import pathlib
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+
+ZERO = "0" * 40
+JOBS = 2  # this PC runs at most two heavy processes
+BUDGET_SECONDS = 600
+# What git sets for its hook, which would point every git a test runs at this repository instead of its own scratch one.
+GIT_HOOK_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_PREFIX", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
+                "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_QUARANTINE_PATH", "GIT_NAMESPACE")
+
+
+def git(*args, cwd=None):
+    """git's stdout (stripped), or None when it fails."""
+    done = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+    return done.stdout.strip() if done.returncode == 0 else None
+
+
+def pushed_to_main(lines):
+    """(remote sha, local sha) of the push line updating refs/heads/main, or None (a deletion counts as none)."""
+    for line in lines.splitlines():
+        parts = line.split()
+        if len(parts) == 4 and parts[2] == "refs/heads/main" and parts[1] != ZERO:
+            return parts[3], parts[1]
+    return None
+
+
+def base_of(remote, tip, repo):
+    """The commit the push's diff starts from: the remote's main when this clone has it, else where tip left
+    origin/main; None when neither is known."""
+    if remote != ZERO and git("cat-file", "-e", f"{remote}^{{commit}}", cwd=repo) is not None:
+        return remote
+    return git("merge-base", tip, "refs/remotes/origin/main", cwd=repo)
+
+
+def project_python(repo):
+    """The framework's interpreter: this checkout's .venv, else the main checkout's (a worktree has none)."""
+    own = pathlib.Path(repo) / ".venv/bin/python"
+    if own.exists():
+        return own
+    common = pathlib.Path(git("rev-parse", "--path-format=absolute", "--git-common-dir", cwd=repo) or repo)
+    return common.parent / ".venv/bin/python"
+
+
+def touched_tests(checkout, changed):
+    """(the test files of the modules the changed paths sit in, those left to the cluster gate), by the test rule's
+    own reading of a module (check.module_of): a path's module is the nearest folder above it that has a test file
+    (in a flat tool folder, the tool script it is), a test file's its own."""
+    sys.path.insert(0, str(checkout / "tools/test_rule"))
+    import check
+    import fnmatch
+    modules = {}
+    for path in check.test_files(checkout):
+        module = check.module_of(checkout, path, check.docstring(checkout, path)) or path
+        modules.setdefault(module, []).append(path)
+    check.parse.cache_clear()  # the parsed trees, held to the interpreter's exit, cost it seconds to free
+    wanted = set()
+    for name in changed:
+        path = pathlib.PurePosixPath(name)
+        if check.is_test_file(path) and (checkout / path).is_file():
+            wanted.add(path)
+            continue
+        for folder in path.parents:
+            module = folder / path.stem if str(folder) in check.FLAT_TOOL_FOLDERS else folder
+            if module in modules:
+                wanted.update(modules[module])
+                break
+    cluster = [pattern for pattern, reason in check.MAY_SKIP.items() if "cluster gate" in reason]
+    left = sorted(path for path in wanted if any(fnmatch.fnmatch(str(path), pattern) for pattern in cluster))
+    return sorted(wanted - set(left)), left
+
+
+def run_tests(checkout, tests, python, budget):
+    """Run the test files by `make tests` inside the budget; True when every one passed."""
+    command = ["make", "-C", str(checkout), "--no-print-directory", "-o", "env", "tests", f"TESTS={' '.join(map(str, tests))}",
+               f"JOBS={JOBS}", f"PYTHON={python}"]
+    started = subprocess.Popen(command, start_new_session=True)
+    try:
+        return started.wait(timeout=budget) == 0
+    except subprocess.TimeoutExpired:
+        os.killpg(started.pid, signal.SIGKILL)
+        started.wait()
+        print(f"push gate: refused, the touched modules' tests ran past {budget} s (motor.pushTestSeconds); push again,"
+              " or raise it", file=sys.stderr)
+        return False
+
+
+def gate(checkout, base, tip, python):
+    """The rule over the tree, then the touched modules' tests; True when the push may go on."""
+    started = time.monotonic()
+    rule = subprocess.run([str(python), "-I", str(checkout / "tools/test_rule/check.py")], cwd=checkout)
+    if rule.returncode != 0:
+        print("push gate: refused, the test rule has faults (python3 tools/test_rule/check.py)", file=sys.stderr)
+        return False
+    if base is None:
+        print(f"push gate: no base known for {tip[:12]} (fetch origin), so no module's test ran")
+    changed = (git("diff", "--name-only", f"{base}..{tip}", cwd=checkout) or "").split() if base else []
+    tests, left = touched_tests(checkout, changed)
+    for path in left:
+        print(f"push gate: {path} left to the cluster gate")
+    if tests:
+        budget = int(git("config", "motor.pushTestSeconds", cwd=checkout) or BUDGET_SECONDS)
+        print(f"push gate: {len(tests)} touched module test file(s), budget {budget} s, {JOBS} at once")
+        if not run_tests(checkout, tests, python, budget):
+            print("push gate: refused, a touched module's test failed", file=sys.stderr)
+            return False
+    print(f"push gate: passed in {time.monotonic() - started:.0f} s ({len(tests)} test file(s))")
+    return True
+
+
+def checked(repo, base, tip):
+    """Run the gate in a clean checkout of tip; True when it passed."""
+    python = project_python(repo)
+    if git("rev-parse", "HEAD", cwd=repo) == tip and not git("status", "--porcelain", cwd=repo):
+        return gate(pathlib.Path(repo), base, tip, python)
+    checkout = tempfile.mkdtemp(prefix="push-gate-")
+    if git("-C", repo, "worktree", "add", "--detach", "-q", checkout, tip) is None:
+        os.rmdir(checkout)
+        print(f"push gate: refused, no worktree of {tip[:12]} could be made", file=sys.stderr)
+        return False
+    try:
+        # the framework's environment in the copy, as in every checkout (a test that runs the checkout's own
+        # .venv/bin/python, this_pc.py's, failed there for want of it, 2026-11-07)
+        (pathlib.Path(checkout) / ".venv").symlink_to(python.parent.parent)
+        return gate(pathlib.Path(checkout), base, tip, python)
+    finally:
+        git("-C", repo, "worktree", "remove", "--force", checkout)
+
+
+def main():
+    """The gate's answer for a push to main; every other push passes."""
+    lines = sys.stdin.read()
+    for name in GIT_HOOK_ENV:
+        os.environ.pop(name, None)
+    pushed = pushed_to_main(lines)
+    if pushed is None:
+        return 0
+    repo = git("rev-parse", "--show-toplevel")
+    remote, tip = pushed
+    return 0 if checked(repo, base_of(remote, tip, repo), tip) else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

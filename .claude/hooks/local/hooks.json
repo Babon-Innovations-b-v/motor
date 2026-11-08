@@ -1,0 +1,3 @@
+[
+  {"event": "SessionStart", "command": "python3 .claude/hooks/local/harness_behind.py", "timeout": 10}
+]
