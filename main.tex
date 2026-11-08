@@ -3,7 +3,8 @@
 % MOTOR paper (#98). Same class, packages, margins and bibliography style as SCORE's paper (paper/score/arxiv/main.tex).
 % Build: tectonic -X compile --keep-intermediates main.tex (paper/CLAUDE.md), then delete main.aux, main.out, main.log.
 % The story is the one agreed with the owner on 2026-11-08, #98 comment 6723992362: two ecosystems, physical AI and
-% biomechanics, each fragmented inside; MOTOR a standardised solver between them. The main body is at most 4 pages
+% biomechanics, each fragmented inside; MOTOR a standardised solver between them. The main body has four sections (related work, method, results,
+% discussion), about 3 pages of text, and is at most 4 pages
 % (it ends at \label{endofmain}) and follows the structure and register of the author's published paper (arXiv:2607.17639,
 % cited as kardolus2026direct) for structure and tone only; none of its method is used here.
 % Every number is read from a source named in a comment beside it. RESULTS ARE NOT IN YET: every result of MOTOR is a
@@ -73,7 +74,7 @@ study the forces behind human movement far beyond the laboratory.
 per trial. Waits on the full run (\#98).}
 \end{abstract}
 
-\section{Introduction}
+\section{Related work}
 
 Physical AI, the branch of artificial intelligence concerned with agents that perceive and act in the physical world,
 has built a rich set of tools for the moving human body. Video estimators recover a parametric body from a single
@@ -84,30 +85,29 @@ produce movement: it records movement with marker-based motion capture and force
 software, OpenSim foremost among it \cite{delp2007opensim,seth2018opensim}, estimates from those recordings the joint
 moments and muscle forces that clinicians and researchers interpret \cite{winter2009biomechanics}.
 
-The two fields rarely meet, and each is fragmented. Physical AI works with many body models, SMPL, MHR
-and SOMA among them \cite{loper2015smpl,ferguson2025mhr,saito2026soma}, each with its own skeleton; biomechanics
-relies on many models and solvers, each expecting its own inputs \cite{dembia2020moco,werling2023addbiomechanics}.
-The bridges between them consequently each serve one route. OpenCap fits an OpenSim model to keypoints from
-smartphone video \cite{uhlrich2023opencap,gilon2026monocular}; SKEL re-rigs SMPL with a biomechanical skeleton
-\cite{keller2023skel}, and HSMR and BioPose regress such poses from images \cite{xia2025hsmr,koleini2025biopose};
-Cotton and colleagues fit MuJoCo models to video
-\cite{cotton2024differentiable,peiffer2025pbl,cotton2025kintwin,cotton2026b3d}; and MuscleMimic and MS-Human-700
-train muscle-driven bodies on MuJoCo Warp \cite{li2026musclemimic,wei2026mshuman}. A body from a new estimator or
-generator therefore needs a new chain before it reaches biomechanics, and biomechanics' own solves remain slow:
-OpenCap's recorded dynamic solves take 44 to 70 minutes per trial. What is missing is a solver that any physical-AI
-body can enter, that answers in biomechanics' terms and that runs where physical AI computes.
+Each field is fragmented within itself. Physical AI works with many body models, SMPL, MHR and SOMA among them
+\cite{loper2015smpl,ferguson2025mhr,saito2026soma}, each with its own skeleton; biomechanics relies on many models and
+solvers, each expecting its own inputs \cite{dembia2020moco,werling2023addbiomechanics}. The bridges built between
+the two consequently each serve one route. OpenCap fits an OpenSim model to keypoints from smartphone video
+\cite{uhlrich2023opencap,gilon2026monocular}; SKEL re-rigs SMPL with a biomechanical skeleton \cite{keller2023skel},
+and HSMR and BioPose regress such poses from images \cite{xia2025hsmr,koleini2025biopose}; Cotton and colleagues fit
+MuJoCo models to video \cite{cotton2024differentiable,peiffer2025pbl,cotton2025kintwin,cotton2026b3d}; and
+MuscleMimic and MS-Human-700 train muscle-driven bodies on MuJoCo Warp \cite{li2026musclemimic,wei2026mshuman}. A
+body from a new estimator or generator therefore needs a new chain before it reaches biomechanics, and biomechanics'
+own solves remain slow: OpenCap's recorded dynamic solves take 44 to 70 minutes per trial.
 % 44 to 70 min: 2635 and 4196 s, OpenCap's two-camera solves in its LabValidation release, hardware not recorded:
 % #98 comment 6696117098 ("Timing comparison").
 
-\paragraph{What is new.} MOTOR is a solver between the two fields, standardised in that its interfaces are fixed. Its input is any physical-AI body, from SOMA, SMPL or MHR, a video estimator or a motion
-generator, read as a skin mesh, a rotation per segment and the joint centres. Its model is MyoFullBody
-\cite{caggiano2022myosuite}. Its output follows biomechanics' conventions, joint angles as the ISB recommends
-\cite{wu2002isb,wu2005isb} and OpenSim's models define them, joint moments, ground reaction forces and muscle forces,
-readable by OpenSim users. And it runs on physical AI's own stack, Newton and MuJoCo Warp
-\cite{newton,mujocowarp,warp}. New in the method are a fit that takes the segment rotations as its main target and keeps
-the bones inside the input's skin, and one solve of the whole trial's movement, ground forces and muscle forces. To our knowledge, MOTOR's per-frame warm start was already
-the first open chain from video to muscle forces (fit, residual reduction, static optimisation) on Newton and MuJoCo
-Warp. We validate MOTOR as a single-camera video pipeline on OpenCap's LabValidation cohort, against OpenCap itself.
+MOTOR is intended as the missing piece: a solver between the two fields, standardised in that its interfaces are
+fixed. Its input is any physical-AI body, from SOMA, SMPL or MHR, a video estimator or a motion generator, read as a
+skin mesh, a rotation per segment and the joint centres; its model is MyoFullBody \cite{caggiano2022myosuite}; its
+output follows biomechanics' conventions, joint angles as the ISB recommends \cite{wu2002isb,wu2005isb} and OpenSim's
+models define them, together with joint moments, ground reaction forces and muscle forces; and it runs on physical
+AI's own stack, Newton and MuJoCo Warp \cite{newton,mujocowarp,warp}. Its method differs from the bridges above in
+two respects: the fit takes the segment rotations as its main target and keeps the bones inside the input's skin, and
+the movement, ground forces and muscle forces of a whole trial are found in one solve. To our knowledge, MOTOR's
+per-frame warm start was already the first open chain from video to muscle forces (fit, residual reduction, static
+optimisation) on Newton and MuJoCo Warp.
 % Novelty search and allowed claim: #98 comment 6683620930 ("Newton novelty", 2026-11-06).
 
 \begin{figure}[t]
@@ -127,74 +127,67 @@ per-frame chain's, the warm start, not MOTOR's final output (\#98).}
 
 \section{Method}
 
-MOTOR matches MyoFullBody to a moving body and then solves for the forces that move it (Figures~\ref{fig:teaser} and~\ref{fig:structure},
-Appendix~\ref{app:method}). MyoFullBody, from MyoSuite \cite{caggiano2022myosuite} with its arm from MoBL-ARMS
-\cite{holzbaur2005upper}, has 416 muscles and 132 joints; its bones are sized to the input's segments and its mass
-spread by their volumes, so no length is left to estimate.
+MOTOR matches MyoFullBody to a moving body and then solves for the forces that move it (Figure~\ref{fig:teaser};
+Figure~\ref{fig:structure} and Appendix~\ref{app:method} give the method in full). MyoFullBody, from MyoSuite
+\cite{caggiano2022myosuite} with its arm from MoBL-ARMS \cite{holzbaur2005upper}, has 416 muscles and 132 joints; its
+bones are sized to the input's segments and its mass spread by their volumes, so that no length is left to estimate.
+Each segment of the input drives a \emph{bone group}, the bones of MyoFullBody covering the same part of the body,
+through a fixed \emph{rest alignment} read once from the two models' anatomical axes at rest and never fitted to
+motion or to any reference angle. The fit then seeks MyoFullBody's pose closest to the body within the joints'
+published ranges and couplings. Its main target is the segment rotations, because a rotation fixes a bone's turn about
+its own long axis, which markers a few centimetres apart resolve poorly; about a hundred landmarks defined by the ISB
+recommendations \cite{wu2002isb,wu2005isb}, each on a fixed point of the skin and the matching point of a bone, place
+the joint centres; and every bone point outside the posed skin is penalised by its distance from it, an idea SKEL
+builds into a body model \cite{keller2023skel}.
 % Counts: paper/motor/evidence/model-2026-11-06.txt (muscle actuators 416, joints 132). Sizing and masses:
-% score/stages/sim_body/inside/fit/CLAUDE.md ("No size unknowns"), inside/volumes.
-
-Each segment of the input body drives a \emph{bone group} of MyoFullBody, the bones covering the same part of the
-body, through a fixed \emph{rest alignment} read once from the two models' anatomical axes at rest and never fitted
-to motion or to any reference angle. The fit seeks MyoFullBody's pose closest to the body within the joints' published
-ranges and couplings. Its main target is the segment rotations, because a
-rotation fixes a bone's turn about its own long axis, which markers a few centimetres apart resolve poorly. Beside
-them, about a hundred landmarks defined by the ISB recommendations \cite{wu2002isb,wu2005isb}, each on a fixed point
-of the skin and the matching point of a bone, place the joint centres. The bones are held inside the skin, an idea SKEL builds into a body model
-\cite{keller2023skel}: every bone point outside the posed skin is penalised by its distance from it.
-% Bone groups and rest alignment: score/stages/sim_body/inside/bone_groups, inside/calibration/CLAUDE.md ("Never fit
-% it, never per person or per clip"); landmarks: inside/landmarks/CLAUDE.md (102 defined from the landmark study,
-% 84 used by the fit); skin: inside/fit/CLAUDE.md, fit/_skin.py.
+% score/stages/sim_body/inside/fit/CLAUDE.md ("No size unknowns"), inside/volumes. Bone groups and rest alignment:
+% score/stages/sim_body/inside/bone_groups, inside/calibration/CLAUDE.md ("Never fit it, never per person or per
+% clip"); landmarks: inside/landmarks/CLAUDE.md (102 defined from the landmark study, 84 used by the fit); skin:
+% inside/fit/CLAUDE.md, fit/_skin.py.
 
 \paragraph{Calibration, once.} The landmarks carry constants that belong to no recording: each one's offset from its
-bone, its weight, and the balance between landmarks and rotations. They are calibrated once, offline, and become part of
-the solver. The calibration runs over synthetic bodies of many shapes and movements, so that it reflects
-the bodies the solver will meet rather than one study's subjects, and it is accepted only when bodies held out of it
-score within 10\% of those used. It is judged on how well the model follows the body, never on any reference joint angle.
+bone, its weight, and the balance between landmarks and rotations. They are calibrated once, offline, over synthetic
+bodies of many shapes and movements, so that they reflect the bodies the solver will meet rather than one study's
+subjects, and become part of the solver. A calibration is accepted only when bodies held out of it score within 10\%
+of those used, and it is judged on how well the model follows the body, never on any reference joint angle.
 % inside/tuning/CLAUDE.md (level 1: unknowns, the two terms); held-out rule (within 10 %): #70 comment 6556935195.
 
-\paragraph{The solver, per recording.} On a recording only the solver runs. It first fixes the person's
-constants, from all of their frames together \cite{cotton2026b3d}: where their landmarks lie on the bones and
-where the joints inside each bone group sit. It then solves the whole trial as one optimisation from a per-frame fit, its
-warm start. Because that fit knows nothing of forces, the solve makes each joint's path a smooth spline, from which speeds and accelerations follow, and
-keeps the fit's cost over every frame at once. The ground's force comes from the motion itself: every skin point near
-the floor is pushed by a smooth spring and damper with friction, the contact model of OpenCap's tracking simulation
-\cite{uhlrich2023opencap}. What neither the ground nor the joints explain is left at the pelvis as a residual, held on
-every frame under 2\% of body weight in force, a limit we set, and under 1\% of body weight times the centre of mass
-height in moment, the limit of Hicks et al.\ \cite{hicks2015model}. The muscles enter the same solve through MuJoCo's
-muscle curves and moment arms, so that movement, ground forces and muscle forces are found together, each consistent
-with the others and with the physics. The movement, contact and residual are built; the muscles' terms are being
-added (\#98).
+\paragraph{The solver, per recording.} On a recording only the solver runs. It first fixes the person's constants
+from all of their frames together \cite{cotton2026b3d}: where their landmarks lie on the bones and where the joints
+inside each bone group sit. It then solves the whole trial as one optimisation, starting from a per-frame fit. Since
+that fit knows nothing of forces, the solve makes each joint's path a smooth spline, from which speeds and
+accelerations follow, and keeps the fit's cost over every frame at once. The ground's force comes from the motion
+itself: every skin point near the floor is pushed by a smooth spring and damper with friction, the contact model of
+OpenCap's tracking simulation \cite{uhlrich2023opencap}. What neither the ground nor the joints explain is left at
+the pelvis as a residual, held on every frame under 2\% of body weight in force, a limit we set, and under 1\% of body
+weight times the centre of mass height in moment, the limit of Hicks et al.\ \cite{hicks2015model}. The muscles enter
+the same solve through MuJoCo's muscle curves and moment arms, so that movement, ground forces and muscle forces are
+found together, each consistent with the others and with the physics. The movement, contact and residual are built;
+the muscles' terms are being added (\#98).
 % inside/fit/CLAUDE.md (levels 2 and 3); inside/motor/CLAUDE.md (spline, contact, residual); inside/motor/_dynamics.py;
 % limits: score/stages/sim_body/CLAUDE.md (2 %BW ours, owner 2026-10-28, tightened from 5 % with AddBiomechanics as
 % benchmark; 1 %BW x centre height, Hicks 2015); muscle plan: #98 comment 6721156999.
 
-\section{Why GPU}
-
-For simulation solvers the GPU is a consequence of scale: the more complex the system simulated, the more of its
-computation must run in parallel, as graphics \cite{owens2008gpu}, deep learning
+\paragraph{Why a GPU.} For simulation solvers the GPU is a consequence of scale: the more complex the system
+simulated, the more of its computation must run in parallel, as graphics \cite{owens2008gpu}, deep learning
 \cite{krizhevsky2012imagenet} and robot simulation \cite{makoviychuk2021isaacgym} have each shown. A full-body model
-with hundreds of muscles, solved over a whole trial at once, is such a problem, and three properties follow.
-Sharing physical AI's stack, MOTOR solves a body where it was made; solving frames and trials side by side, it scales
-with the data; and being differentiable, it offers its gradients to the tools around it.
+with hundreds of muscles, solved over a whole trial at once, is such a problem. On physical AI's stack MOTOR solves a
+body where it was made, solves frames and trials side by side so that it scales with the data, and, being
+differentiable, offers its gradients to the tools around it.
 
-\section{Validation protocol}
+\section{Results}
 \label{sec:protocol}
 
 We run MOTOR as a single-camera pipeline, one phone video through GEM-X \cite{gemx,li2025genmo} into MOTOR, on
 OpenCap LabValidation \cite{uhlrich2023opencap}: nine healthy subjects walking, walking with trunk sway, squatting,
-rising from a chair and drop jumping, filmed by five synchronised iPhones and recorded with motion capture, force plates and EMG of 16 lower-limb channels; its 144 trials seen by five
-cameras give 720 single-camera inputs, each run on its own. The reference is the lab's inverse kinematics and dynamics in
-OpenSim, the plates and the EMG envelopes. We compare with OpenCap, the only
-method validated on this cohort and reference, both its two-camera pipeline \cite{uhlrich2023opencap} and OpenCap
-Monocular \cite{gilon2026monocular} on its matched set (the 45\dg{} camera, no jumps, fifteen shared angles), scoring
-every joint angle, ground forces on all three axes, joint moments, muscle activity against EMG and solve time
-(Appendix~\ref{app:protocol}).
+rising from a chair and drop jumping, filmed by five synchronised iPhones and recorded with motion capture, force
+plates and EMG of 16 lower-limb channels. Its 144 trials seen by five cameras give 720 single-camera inputs, each run
+on its own, against the lab's inverse kinematics and dynamics in OpenSim, the plates and the EMG envelopes. We compare
+with OpenCap, the only method validated on this cohort and reference: its two-camera pipeline
+\cite{uhlrich2023opencap}, and OpenCap Monocular \cite{gilon2026monocular} on its matched set (Appendix~\ref{app:protocol}).
 % Cohort and envelope: #98 comment 6683683998; full technical validation: #98 comment 6683702742; EMG channels:
 % paper/motor/evidence/labval-final-2026-11-07.txt ("EMG per channel", 16); moments' reference: same file's header
 % (tools/labval/opensim_reference.py).
-
-\section{Results}
 
 MOTOR's validation has not yet run: Table~\ref{tab:headline} and Figure~\ref{fig:results} hold its places, and
 Appendix~\ref{app:motor} those of the full technical validation. The earlier results of the per-frame chain, MOTOR's
@@ -231,34 +224,26 @@ the lab's inverse kinematics, mean $\pm$ 1 SD over cycles. Waits on the whole-tr
 
 \section{Discussion}
 
-MOTOR is meant to close the gap between the two fields. Physical AI gains bodies
-with real biomechanics: a motion generator's output, for example, can come back with the ground and muscle forces
-that would move it, as SCORE already does for the people it generates with Kimodo \cite{rempe2026kimodo}. Biomechanics gains physical AI's scale: any body model
-and any estimator reach one musculoskeletal model through one solver, so that analyses confined to laboratory cohorts could extend to large collections of video.
+A standard solver between the two fields serves both. Physical AI gains bodies with real biomechanics: a motion
+generator's output, for example, can come back with the ground and muscle forces that would move it, as SCORE already
+does for the people it generates with Kimodo \cite{rempe2026kimodo}. Biomechanics gains physical AI's scale: any body
+model and any estimator reach one musculoskeletal model through one solver, so that analyses confined to laboratory
+cohorts could extend to large collections of video.
 % Kimodo in SCORE: score/stages/sim_body/CLAUDE.md (the sim body stage solves each scene's clips).
 
-\paragraph{Limitations.} MOTOR's muscle terms and full run are still to come. Only SOMA
-bodies, from GEM-X and Kimodo, have passed through it; another body model through the same solver, such as the MHR
-bodies of SAM 3D Body \cite{yang2026sam3dbody}, is the test the claim of one input still needs. Its input's errors pass through,
-and one camera leaves depth uncertain. LabValidation is nine healthy
-adults; patients whose joints move past the published ranges will need ranges of their own.
-
-\section{Conclusion}
-
-A body from physical AI can be carried into biomechanics by one standardised solver rather than by a chain built for
-each body model. MOTOR fits MyoFullBody inside any such body's skin, with landmark constants calibrated once, and
-solves the whole trial as one optimisation in which movement, ground forces and muscle forces are found together, in
-OpenSim's conventions and on physical AI's GPU stack. Its validation on OpenCap's own cohort awaits the full run.
-
-\smallskip
-\noindent\gaptext{MOTOR's accuracy against OpenCap on the same cohort, and its time per trial (\#98).}
-\smallskip
+\paragraph{Limitations.} MOTOR's muscle terms and full run are still to come. Only SOMA bodies, from GEM-X and Kimodo,
+have passed through it; another body model through the same solver, such as the MHR bodies of SAM 3D Body
+\cite{yang2026sam3dbody}, is the test the claim of one input still needs. Errors in the input pass through, and one
+camera leaves depth uncertain. LabValidation comprises nine healthy adults; patients whose joints move past the
+published ranges will need ranges of their own.
 
 Estimating the forces behind movement has long required a laboratory and software built for one model and one route.
-Markerless methods such as OpenCap removed the laboratory; MOTOR aims to remove the bespoke chain, so that any body
-physical AI can estimate or generate reaches muscle forces through one solver. We hope this gives physical AI
-bodies that obey the mechanics of muscle and bone, and biomechanics the scale to study the forces behind human
-movement across far more people, movements and settings than a laboratory can reach.
+Markerless methods such as OpenCap removed the laboratory; MOTOR aims to remove the bespoke chain, fitting
+MyoFullBody inside any physical-AI body's skin with constants calibrated once and solving each trial's movement,
+ground forces and muscle forces together, in OpenSim's conventions and on physical AI's GPU stack. Its validation on
+OpenCap's own cohort awaits the full run. We hope it gives physical AI bodies that obey the mechanics of muscle and
+bone, and biomechanics the scale to study the forces behind human movement across far more people, movements and
+settings than a laboratory can reach.
 
 % Every float of the main body is placed before this point.
 \FloatBarrier
