@@ -1,0 +1,336 @@
+{
+ "what": "The jump clip's fit record (run.json people.mean_jump.model.fit.following) from the base, round 2, of speed-2026-11-06.txt (main 9dfd12b1). Triples are [median, max, frames x items].",
+ "following": {
+  "bones outside skin %": {
+   "all": 1.54,
+   "foot": 6.63,
+   "forearm": 1.63,
+   "hand": 1.55,
+   "head": 5.94,
+   "pelvis": 0.0,
+   "shin": 2.95,
+   "shoulder": 0.29,
+   "spine": 0.11,
+   "thigh": 0.0
+  },
+  "skin folded frames": {
+   "frames": 0,
+   "all": 0.0,
+   "no unfolded frame": false
+  },
+  "turns deg, main's frozen table": {
+   "free": [
+    4.35,
+    16.7,
+    3152
+   ],
+   "at a limit": [
+    6.11,
+    16.7,
+    988
+   ]
+  },
+  "per group deg, main's frozen table": {
+   "Hips": [
+    0.1,
+    0.45
+   ],
+   "Spine1": [
+    13.54,
+    13.63
+   ],
+   "Spine2": [
+    8.29,
+    8.45
+   ],
+   "Chest": [
+    0.89,
+    3.06
+   ],
+   "Neck1": [
+    0.73,
+    1.87
+   ],
+   "Neck2": [
+    3.56,
+    3.81
+   ],
+   "Head": [
+    6.56,
+    6.77
+   ],
+   "LeftShoulder": [
+    0.0,
+    3.01
+   ],
+   "RightShoulder": [
+    0.56,
+    3.68
+   ],
+   "LeftArm": [
+    6.03,
+    6.56
+   ],
+   "RightArm": [
+    6.03,
+    6.63
+   ],
+   "LeftForeArm": [
+    6.45,
+    7.04
+   ],
+   "RightForeArm": [
+    6.3,
+    7.19
+   ],
+   "LeftHand": [
+    16.66,
+    16.7
+   ],
+   "RightHand": [
+    16.66,
+    16.68
+   ],
+   "LeftLeg": [
+    0.92,
+    1.24
+   ],
+   "RightLeg": [
+    0.9,
+    2.12
+   ],
+   "LeftShin": [
+    4.6,
+    4.73
+   ],
+   "RightShin": [
+    4.36,
+    4.68
+   ],
+   "LeftFoot": [
+    2.86,
+    3.0
+   ],
+   "RightFoot": [
+    3.23,
+    3.99
+   ],
+   "LeftToeBase": [
+    13.25,
+    13.46
+   ],
+   "RightToeBase": [
+    13.62,
+    13.98
+   ]
+  },
+  "joints mm": {
+   "free": [
+    6.94,
+    22.56,
+    3171
+   ],
+   "at a limit": [
+    14.24,
+    20.37,
+    789
+   ]
+  },
+  "turns deg": {
+   "free": [
+    0.7,
+    6.71,
+    3152
+   ],
+   "at a limit": [
+    2.81,
+    6.94,
+    988
+   ]
+  },
+  "per joint mm": {
+   "Spine1": [
+    3.0,
+    7.7
+   ],
+   "Spine2": [
+    3.4,
+    6.8
+   ],
+   "Chest": [
+    6.7,
+    13.3
+   ],
+   "Neck1": [
+    4.4,
+    5.9
+   ],
+   "Neck2": [
+    2.6,
+    4.8
+   ],
+   "Head": [
+    7.0,
+    8.8
+   ],
+   "LeftShoulder": [
+    5.4,
+    6.9
+   ],
+   "LeftArm": [
+    14.8,
+    17.1
+   ],
+   "RightShoulder": [
+    5.6,
+    7.2
+   ],
+   "RightArm": [
+    14.5,
+    16.9
+   ],
+   "LeftForeArm": [
+    12.7,
+    14.6
+   ],
+   "RightForeArm": [
+    11.3,
+    16.0
+   ],
+   "LeftHand": [
+    19.3,
+    19.7
+   ],
+   "RightHand": [
+    19.6,
+    20.4
+   ],
+   "LeftLeg": [
+    16.1,
+    22.6
+   ],
+   "LeftShin": [
+    17.8,
+    20.0
+   ],
+   "RightLeg": [
+    15.4,
+    22.3
+   ],
+   "RightShin": [
+    16.3,
+    18.5
+   ],
+   "LeftFoot": [
+    7.0,
+    8.1
+   ],
+   "RightFoot": [
+    7.2,
+    8.9
+   ],
+   "LeftToeBase": [
+    4.8,
+    6.5
+   ],
+   "RightToeBase": [
+    5.1,
+    7.2
+   ]
+  },
+  "per group deg": {
+   "Hips": [
+    0.21,
+    0.29
+   ],
+   "Spine1": [
+    0.16,
+    0.26
+   ],
+   "Spine2": [
+    0.09,
+    0.13
+   ],
+   "Chest": [
+    0.89,
+    3.06
+   ],
+   "Neck1": [
+    0.73,
+    1.87
+   ],
+   "Neck2": [
+    3.56,
+    3.81
+   ],
+   "Head": [
+    0.76,
+    1.82
+   ],
+   "LeftShoulder": [
+    0.0,
+    3.01
+   ],
+   "RightShoulder": [
+    0.56,
+    3.68
+   ],
+   "LeftArm": [
+    6.06,
+    6.58
+   ],
+   "RightArm": [
+    6.05,
+    6.65
+   ],
+   "LeftForeArm": [
+    6.15,
+    6.71
+   ],
+   "RightForeArm": [
+    6.04,
+    6.94
+   ],
+   "LeftHand": [
+    0.19,
+    0.31
+   ],
+   "RightHand": [
+    0.19,
+    0.29
+   ],
+   "LeftLeg": [
+    0.65,
+    0.99
+   ],
+   "RightLeg": [
+    0.64,
+    1.96
+   ],
+   "LeftShin": [
+    0.71,
+    1.03
+   ],
+   "RightShin": [
+    0.57,
+    1.89
+   ],
+   "LeftFoot": [
+    1.93,
+    2.22
+   ],
+   "RightFoot": [
+    1.4,
+    2.37
+   ],
+   "LeftToeBase": [
+    1.92,
+    2.23
+   ],
+   "RightToeBase": [
+    1.4,
+    2.55
+   ]
+  }
+ }
+}

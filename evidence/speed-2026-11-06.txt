@@ -1,0 +1,56 @@
+Sim body speed and repeatability, 2026-11-06 (issue #70). One rented L4 (Scaleway L4-1-24G, fr-par-2), one clip at a time,
+through the sim body's own run (score/stages/sim_body/inside/sim_body.py). Base: origin/main 9dfd12b1 (level 3 on the card by
+default). Clips jump (180 frames at 30 fps) and standing (150 frames). Each clip run twice on the same card:
+base's round 1 jump is the fresh card's first run (Warp compiles its kernels); every run after it is warm. Cloud batch blender-20261106-053153-2115378.
+Totals are each run's timings.json 'total s' (wall clock of the whole run, seconds).
+
+base jump     round 1: total s 302.72
+base jump     round 2: total s 119.98
+base standing round 1: total s 89.48
+base standing round 2: total s 89.06
+new  jump     round 1: total s 119.25
+new  jump     round 2: total s 119.83
+new  standing round 1: total s 88.89
+new  standing round 2: total s 88.52
+
+new = 663a096d (Footing lands a stack of paths at once), measured against base; base is the figure the paper cites.
+
+speed.py (round 2, base against new, and each side's two rounds compared bit for bit):
+== jump: total s base 119.98 new 119.83 (new/base 0.999), new's sweeps [2]
+   sim_body.fitted_person       32.66 32.72
+   sim_body.clip_angles         15.09 15.18
+   fit.angles                   15.09 15.18
+   fit.card_angles              15.09 15.18
+   sim_body.reduced             53.35 53.35
+   sim_body.within_follows      0.5 0.53
+   sim_body.within_frames       8.01 7.79
+   sim_body.frames              13.74 13.73
+   batched.Card.evaluate        8.7 8.73
+   muscles.least_all            7.85 7.85
+   Footing.footed               5.87 5.67
+   rra.cap_rows                 6.05 6.03
+   base round 1 against round 2: same bits
+   new round 1 against round 2: same bits
+   apart base/new: []
+== standing: total s base 89.06 new 88.52 (new/base 0.994), new's sweeps [2]
+   sim_body.fitted_person       27.49 27.37
+   sim_body.clip_angles         10.89 10.9
+   fit.angles                   10.89 10.9
+   fit.card_angles              10.89 10.9
+   sim_body.reduced             32.15 32.2
+   sim_body.within_follows      0.41 0.41
+   sim_body.within_frames       4.26 4.13
+   sim_body.frames              14.32 13.95
+   batched.Card.evaluate        7.36 7.35
+   muscles.least_all            0.71 0.71
+   Footing.footed               4.82 4.72
+   rra.cap_rows                 5.38 5.39
+   base round 1 against round 2: same bits
+   new round 1 against round 2: same bits
+   apart base/new: []
+
+same.py (base against new, run.json bytes and every run.npz array):
+jump-1: run.json bytes equal, 176 of 176 arrays equal
+jump-2: run.json bytes equal, 176 of 176 arrays equal
+standing-1: run.json bytes equal, 176 of 176 arrays equal
+standing-2: run.json bytes equal, 176 of 176 arrays equal

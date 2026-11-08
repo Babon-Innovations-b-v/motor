@@ -1,0 +1,33 @@
+MOTOR on OpenCap LabValidation: the subject's own standing pose as the model's neutral, 2026-11-08 (issue #98).
+Idea: as a static calibration in motion capture, take each subject's static standing trial (static1, videos only) as
+the model's zero for pelvis tilt, lumbar extension and the elbows, read from the subject's own video, never the lab's
+angles. Chain: GEM-X (diagonal focal) -> MoGe-2 -> GEM-X at MoGe-2's field of view -> the sim body on the lab's floor
+(the final validation's chain, sim body code unchanged since 5996a8f2), the 45 static videos (9 subjects x 5 cameras).
+Neutral (`labval.neutral`): each static run's median over its frames; the pelvis tilt read on its own heading and
+taken off as a turn about the pelvis' own z (`_run.angles`), lumbar extension and elbows less their standing values,
+each trial on its own camera's static run. Scoring: `python -m tools.labval score <measure-final> --static
+<measure-static>` against the same command without --static, the same 715 runs of the final validation.
+Cost: GEM-X EUR 3.32, MoGe-2 EUR 1.36, GEM-X at MoGe-2's fov EUR 1.71, sim bodies EUR 1.01: EUR 7.40 (override
+labval-motor-static, EUR 10). Results in the store: labval-results/motor-static-neutral-2026-11-08/.
+
+Result: worse on every measure it targets, so not used (the validation's numbers stay those without --static).
+The sim body stands at a pelvis tilt of -2.6 deg (median of 45 static runs, range -7.8 to +0.8), lumbar +1.0, elbows
+7.5 deg flexed (0 to 23); the trials' biases against the lab run the other way (pelvis tilt +5.4, lumbar -3.7, elbows -23
+and -25), so the lab's IK does not put a subject's standing pose at the model's zero: its scaled model, registered on
+the subject's static markers, stands at its own tilt and elbow flexion. Zeroing the standing pose adds the sim body's
+own standing reading to each bias.
+
+Held-out subjects 7-11 (396 trials, every one with its static run): before -> after
+held-out: 396 before, 396 after, 396 common, 396 with a neutral
+before all common          n=396  15-MAE 5.13 | pelvis_tilt bias +5.38 MAE 6.31 | lumbar_extension bias -3.69 MAE 5.09 | elbow_flex_r bias -23.07 MAE 23.25 | elbow_flex_l bias -25.46 MAE 25.54 | tilt>0 in 91%
+after all common           n=396  15-MAE 5.29 | pelvis_tilt bias +7.76 MAE 8.11 | lumbar_extension bias -4.54 MAE 5.64 | elbow_flex_r bias -30.44 MAE 30.49 | elbow_flex_l bias -31.43 MAE 31.44 | tilt>0 in 97%
+before Cam0                n=80   15-MAE 5.09 | pelvis_tilt bias +2.87 MAE 4.57 | lumbar_extension bias -2.58 MAE 4.80 | elbow_flex_r bias -24.89 MAE 24.98 | elbow_flex_l bias -27.41 MAE 27.48 | tilt>0 in 80%
+after Cam0                 n=80   15-MAE 5.26 | pelvis_tilt bias +6.19 MAE 6.70 | lumbar_extension bias -3.83 MAE 5.19 | elbow_flex_r bias -29.97 MAE 29.98 | elbow_flex_l bias -33.31 MAE 33.33 | tilt>0 in 98%
+before Cam1                n=78   15-MAE 5.38 | pelvis_tilt bias +6.53 MAE 6.85 | lumbar_extension bias -4.47 MAE 5.33 | elbow_flex_r bias -23.07 MAE 23.16 | elbow_flex_l bias -25.61 MAE 25.64 | tilt>0 in 100%
+after Cam1                 n=78   15-MAE 5.44 | pelvis_tilt bias +8.00 MAE 8.18 | lumbar_extension bias -3.57 MAE 4.90 | elbow_flex_r bias -29.35 MAE 29.35 | elbow_flex_l bias -28.96 MAE 28.97 | tilt>0 in 100%
+before Cam2                n=80   15-MAE 5.02 | pelvis_tilt bias +7.88 MAE 8.32 | lumbar_extension bias -3.70 MAE 5.55 | elbow_flex_r bias -18.74 MAE 19.37 | elbow_flex_l bias -21.20 MAE 21.48 | tilt>0 in 100%
+after Cam2                 n=80   15-MAE 5.28 | pelvis_tilt bias +10.12 MAE 10.27 | lumbar_extension bias -6.70 MAE 7.50 | elbow_flex_r bias -33.89 MAE 34.06 | elbow_flex_l bias -33.26 MAE 33.30 | tilt>0 in 100%
+before Cam3                n=79   15-MAE 5.16 | pelvis_tilt bias +6.64 MAE 7.28 | lumbar_extension bias -4.42 MAE 5.18 | elbow_flex_r bias -22.98 MAE 23.02 | elbow_flex_l bias -25.65 MAE 25.65 | tilt>0 in 91%
+after Cam3                 n=79   15-MAE 5.29 | pelvis_tilt bias +8.42 MAE 8.80 | lumbar_extension bias -4.53 MAE 5.60 | elbow_flex_r bias -28.45 MAE 28.48 | elbow_flex_l bias -30.07 MAE 30.07 | tilt>0 in 92%
+before Cam4                n=79   15-MAE 5.01 | pelvis_tilt bias +2.97 MAE 4.55 | lumbar_extension bias -3.33 MAE 4.58 | elbow_flex_r bias -25.72 MAE 25.74 | elbow_flex_l bias -27.47 MAE 27.47 | tilt>0 in 86%
+after Cam4                 n=79   15-MAE 5.17 | pelvis_tilt bias +6.05 MAE 6.57 | lumbar_extension bias -4.03 MAE 5.01 | elbow_flex_r bias -30.51 MAE 30.51 | elbow_flex_l bias -31.45 MAE 31.45 | tilt>0 in 94%

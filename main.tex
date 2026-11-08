@@ -1,6 +1,6 @@
 \documentclass[11pt]{article}
 
-% MOTOR paper (#98). Same class, packages, margins and bibliography style as SCORE's paper (paper/arxiv/main.tex).
+% MOTOR paper (#98). Same class, packages, margins and bibliography style as SCORE's paper (paper/score/arxiv/main.tex).
 % Build: tectonic -X compile main.tex (paper/CLAUDE.md). Laid out like the author's published paper
 % (arXiv:2607.17639, cited as kardolus2026direct) for structure and tone only; none of its method is used here.
 % Rules carried over from paper/CLAUDE.md: every number is read from a source named in a comment beside it;
@@ -73,7 +73,7 @@ marker-based motion capture, force plates and EMG, with subjects 7 to 11 held ou
 is measured so far is the per-frame chain that now gives the whole-trial solve its starting point: on OpenCap
 Monocular's matched envelope its joint angle error is 5.16\dg, its vertical ground reaction force error 16.2\% of
 body weight, and its pelvis residual stays within the limits on only 21\% of frames.
-% Chain numbers: paper/evidence/sim-body/labval-final-2026-11-07.txt ("envelope" matched angle MAE 5.16; "all": GRF
+% Chain numbers: paper/motor/evidence/labval-final-2026-11-07.txt ("envelope" matched angle MAE 5.16; "all": GRF
 % vertical 16.2, frames within 21 %).
 
 \smallskip
@@ -217,7 +217,7 @@ are coupled to another joint by a polynomial (the knee's and the shoulder girdle
 move on their own. Its bone groups (below) are sized to the person's SOMA body, each group's length taken from its
 SOMA segment, joint to joint; MOTOR does not solve for any length. Its masses are SOMA's segment volumes spread over
 the subject's measured mass.
-% Counts: paper/evidence/sim-body/model-2026-11-06.txt (MuJoCo 3.15.0 on the sized model file). Sizing and masses:
+% Counts: paper/motor/evidence/model-2026-11-06.txt (MuJoCo 3.15.0 on the sized model file). Sizing and masses:
 % score/stages/sim_body/inside/fit/CLAUDE.md ("No size unknowns": lengths from inside/sizing), inside/volumes.
 
 \subsection{Segments, bone groups and landmarks}
@@ -443,7 +443,7 @@ moment error 2.41\% of weight times height. It takes a median of 66\,s per trial
 residual stays within both limits on only 21\% of frames. Appendix~\ref{app:chain} gives its full validation. These
 are the warm start's numbers, not MOTOR's result.
 % score/stages/sim_body/CLAUDE.md (two stages, RRA, residual limits); bit for bit: commit e0c46164 and
-% paper/evidence/sim-body/speed-2026-11-06.txt; numbers: paper/evidence/sim-body/labval-final-2026-11-07.txt
+% paper/motor/evidence/speed-2026-11-06.txt; numbers: paper/motor/evidence/labval-final-2026-11-07.txt
 % ("envelope" matched angle MAE 5.16 [4.77, 5.59]; "all": GRF vertical 16.2, moments 2.41, frames within 21 %;
 % "sim body wall seconds per step": total median 66.214 s).
 
@@ -528,7 +528,7 @@ Frames within both residual limits & -- & 21\% & \gapcell & \gapcell \\
 \end{table}
 % OpenCap 4.5: OpenCap paper, Results (read 2026-11-06 at journals.plos.org); 4.8: arXiv:2603.24733 via
 % arXiv:2607.17639, abstract and Section 3.1; OpenCap's kinetics and the warm start's column:
-% paper/evidence/sim-body/labval-final-2026-11-07.txt ("envelope", "all"; OpenCap's published figures; vasti
+% paper/motor/evidence/labval-final-2026-11-07.txt ("envelope", "all"; OpenCap's published figures; vasti
 % symmetry after).
 
 \begin{figure}[t]
@@ -674,7 +674,7 @@ estimated body shape becomes an error in the model's size. Monocular depth ambig
 rotations, as it does for every single-camera method: in the recorded runs, the knee of the leg far from the camera
 sits 37 to 44\,mm from the centre of pressure in the frontal plane where the lab has 9 to 16\,mm, which accounts for
 the error in the early-stance knee adduction moment.
-% paper/evidence/sim-body/elbow-2026-11-07.txt (540 walking arm-trials, SOMA minus markers median -18.5; sim body
+% paper/motor/evidence/elbow-2026-11-07.txt (540 walking arm-trials, SOMA minus markers median -18.5; sim body
 % minus SOMA median -2.5); labval-final-2026-11-07.txt ("signed offsets": elbow r -21.12, l -23.66, 89 of 89; pelvis
 % tilt +5.26, 82 of 89; per coordinate: envelope cMAE elbow r 3.00, l 4.61); far leg: #98 comment 6721835197.
 
@@ -840,7 +840,7 @@ final run of 7 November 2026, all 720 single-camera inputs were run; 715 were sc
 Section~\ref{app:failures} gives the rest by cause. ``This run'' below is that run; ``before'' and ``the previous full
 run'' are the chain's earlier full run of the same 720 inputs (700 scored), before changes to its contact model, its
 floor and its joints' ligaments, scored again with the same code. Every number is from
-paper/evidence/sim-body/labval-final-2026-11-07.txt, except the published solve times of
+paper/motor/evidence/labval-final-2026-11-07.txt, except the published solve times of
 Table~\ref{tab:chaintiming}.
 % That file's "run" and header.
 
@@ -1156,7 +1156,7 @@ Whole trial & spline & uniform cubic B-spline, one control point per frame \\
 \bottomrule
 \end{tabular}
 \end{center}
-% Model: paper/evidence/sim-body/model-2026-11-06.txt; landmarks: inside/landmarks/CLAUDE.md; fit: inside/fit/_frames.py
+% Model: paper/motor/evidence/model-2026-11-06.txt; landmarks: inside/landmarks/CLAUDE.md; fit: inside/fit/_frames.py
 % (MARKER_GOAL, MOST_STEPS), inside/fit/_skin.py (SKIN_GOAL); level 1: inside/tuning/CLAUDE.md (END_REACH), #70
 % comment 6556935195; level 2: inside/fit/__init__.py SAMPLE, inside/fit/_constants.py MARK_MOST; whole trial:
 % inside/motor/_spline.py, inside/solvers/__init__.py CUTOFF, inside/motor/_dynamics.py (BAND, FOOT_STIFFNESS,

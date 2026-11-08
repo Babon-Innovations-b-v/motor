@@ -1,0 +1,125 @@
+{
+ "what": "Kimodo's own foot-contact correction on the person's legs after stood, measured against stood alone (issue #70), 2026-11-06, one rented L4, cloud batch blender-20261106-095757-2939500. One inside for both sides (main 453a2fc8's); the sides differ only in their targets: base = the clip as main plays it (stood alone), new = stood, then Kimodo's foot correction (its post_process_motion with its own foot_contacts labels) on the person's own bones. Definitions (the run's sum.py): 'unpushed' = frames where the ground pushes under 5% of body weight while the vertical residual holds over half of it; 'resF median'/'resF max' = the vertical residual force at the root, absolute, median and largest over frames (N); 'push off weight %' = median of vertical ground reaction force over weight, less 1; 'lowest mm' = the lowest skin point's height over the floor, median and 5th percentile; 'out'/'foot' = percent of bone outside the skin, whole body and foot region; 'joints' = joint-centre error in mm on the path the physics takes (median, max). Not on main when this was copied.",
+ "clips": {
+  "pickup base": {
+   "unpushed": 0,
+   "frames": 180,
+   "resF median": 0,
+   "resF max": 3,
+   "push off weight %": -0.1,
+   "lowest mm median": -0.9,
+   "lowest mm p5": -3.6,
+   "out": 1.62,
+   "foot": 5.4,
+   "joints": [
+    9.79,
+    21.9
+   ]
+  },
+  "pickup new": {
+   "unpushed": 0,
+   "frames": 180,
+   "resF median": 0,
+   "resF max": 3,
+   "push off weight %": -0.1,
+   "lowest mm median": -1.8,
+   "lowest mm p5": -4.5,
+   "out": 1.64,
+   "foot": 5.35,
+   "joints": [
+    9.96,
+    21.47
+   ]
+  },
+  "walk base": {
+   "unpushed": 5,
+   "frames": 136,
+   "resF median": 4,
+   "resF max": 782,
+   "push off weight %": -6.4,
+   "lowest mm median": -0.3,
+   "lowest mm p5": -10.7,
+   "out": 2.43,
+   "foot": 8.12,
+   "joints": [
+    8.42,
+    25.57
+   ]
+  },
+  "walk new": {
+   "unpushed": 0,
+   "frames": 136,
+   "resF median": 3,
+   "resF max": 57,
+   "push off weight %": -4.2,
+   "lowest mm median": -1.9,
+   "lowest mm p5": -18.6,
+   "out": 2.4,
+   "foot": 8.42,
+   "joints": [
+    8.4,
+    25.87
+   ]
+  },
+  "lunge base": {
+   "unpushed": 5,
+   "frames": 210,
+   "resF median": 9,
+   "resF max": 531,
+   "push off weight %": -7.8,
+   "lowest mm median": -2.8,
+   "lowest mm p5": -27.0,
+   "out": 3.88,
+   "foot": 6.6,
+   "joints": [
+    9.86,
+    24.82
+   ]
+  },
+  "lunge new": {
+   "unpushed": 0,
+   "frames": 210,
+   "resF median": 2,
+   "resF max": 227,
+   "push off weight %": 0.9,
+   "lowest mm median": -3.5,
+   "lowest mm p5": -27.4,
+   "out": 3.89,
+   "foot": 7.04,
+   "joints": [
+    9.87,
+    24.84
+   ]
+  },
+  "standing base": {
+   "unpushed": 0,
+   "frames": 150,
+   "resF median": 0,
+   "resF max": 0,
+   "push off weight %": -0.0,
+   "lowest mm median": -1.7,
+   "lowest mm p5": -1.8,
+   "out": 1.31,
+   "foot": 5.19,
+   "joints": [
+    5.74,
+    20.22
+   ]
+  },
+  "standing new": {
+   "unpushed": 0,
+   "frames": 150,
+   "resF median": 0,
+   "resF max": 0,
+   "push off weight %": -0.0,
+   "lowest mm median": -2.7,
+   "lowest mm p5": -2.9,
+   "out": 1.42,
+   "foot": 5.19,
+   "joints": [
+    5.79,
+    19.73
+   ]
+  }
+ }
+}

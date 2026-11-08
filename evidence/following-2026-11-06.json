@@ -1,0 +1,81 @@
+{
+ "what": "Sim body following on main 453a2fc8 (issue #70), one rented L4, one round a clip through the stage's own run. 'out *' are the percent of bone outside SOMA's skin (all and per region); 'joints' the median and largest joint-centre error in mm against SOMA's joints. Only the base (main) side of the neck measurement is kept here.",
+ "batch": "blender-20261106-093447-1843285",
+ "clips": {
+  "pickup": {
+   "out all": 1.7,
+   "out head": 8.48,
+   "out spine": 0.19,
+   "out shoulder": 1.2,
+   "out hand": 1.56,
+   "out foot": 5.4,
+   "out shin": 4.69,
+   "joints": [
+    9.69,
+    21.58
+   ],
+   "Neck1 mm": [
+    4.5,
+    19.0
+   ],
+   "Neck2 mm": [
+    2.5,
+    16.4
+   ],
+   "Head mm": [
+    8.2,
+    11.5
+   ]
+  },
+  "jump": {
+   "out all": 1.37,
+   "out head": 6.35,
+   "out spine": 0.11,
+   "out shoulder": 0.27,
+   "out hand": 1.26,
+   "out foot": 6.32,
+   "out shin": 2.52,
+   "joints": [
+    7.0,
+    23.26
+   ],
+   "Neck1 mm": [
+    4.3,
+    8.2
+   ],
+   "Neck2 mm": [
+    2.9,
+    5.6
+   ],
+   "Head mm": [
+    6.8,
+    10.7
+   ]
+  },
+  "standing": {
+   "out all": 1.14,
+   "out head": 6.0,
+   "out spine": 0.38,
+   "out shoulder": 0.44,
+   "out hand": 0.51,
+   "out foot": 6.43,
+   "out shin": 4.75,
+   "joints": [
+    7.44,
+    21.85
+   ],
+   "Neck1 mm": [
+    1.6,
+    2.2
+   ],
+   "Neck2 mm": [
+    2.5,
+    3.7
+   ],
+   "Head mm": [
+    7.5,
+    7.9
+   ]
+  }
+ }
+}
