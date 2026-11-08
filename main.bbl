@@ -38,6 +38,25 @@ Davis Rempe, Mathis Petrovich, Ye~Yuan, Haotian Zhang, Xue~Bin Peng, et~al.
 \newblock URL \url{https://github.com/google-deepmind/mujoco_warp}.
 \newblock Apache-2.0.
 
+\bibitem[Loper et~al.(2015)Loper, Mahmood, Romero, Pons-Moll, and
+  Black]{loper2015smpl}
+Matthew Loper, Naureen Mahmood, Javier Romero, Gerard Pons-Moll, and Michael~J.
+  Black.
+\newblock {SMPL}: A skinned multi-person linear model.
+\newblock \emph{ACM Transactions on Graphics}, 34\penalty0 (6):\penalty0
+  248:1--248:16, 2015.
+
+\bibitem[Ferguson et~al.(2025)Ferguson, Osman, Bescos, et~al.]{ferguson2025mhr}
+Aaron Ferguson, Ahmed A.~A. Osman, Berta Bescos, et~al.
+\newblock {MHR}: Momentum human rig.
+\newblock \emph{arXiv preprint arXiv:2511.15586}, 2025.
+
+\bibitem[Saito et~al.(2026)Saito, Li, de~Ruyter, Guerrero,
+  et~al.]{saito2026soma}
+Jun Saito, Jiefeng Li, Michael de~Ruyter, Miguel Guerrero, et~al.
+\newblock {SOMA}: Unifying parametric human body models.
+\newblock \emph{arXiv preprint arXiv:2603.16858}, 2026.
+
 \bibitem[Delp et~al.(2007)Delp, Anderson, Arnold, Loan, Habib, John,
   Guendelman, and Thelen]{delp2007opensim}
 Scott~L. Delp, Frank~C. Anderson, Allison~S. Arnold, Peter Loan, Ayman Habib,
@@ -61,25 +80,6 @@ David~A. Winter.
 \newblock \emph{Biomechanics and Motor Control of Human Movement}.
 \newblock Wiley, 4 edition, 2009.
 
-\bibitem[Loper et~al.(2015)Loper, Mahmood, Romero, Pons-Moll, and
-  Black]{loper2015smpl}
-Matthew Loper, Naureen Mahmood, Javier Romero, Gerard Pons-Moll, and Michael~J.
-  Black.
-\newblock {SMPL}: A skinned multi-person linear model.
-\newblock \emph{ACM Transactions on Graphics}, 34\penalty0 (6):\penalty0
-  248:1--248:16, 2015.
-
-\bibitem[Ferguson et~al.(2025)Ferguson, Osman, Bescos, et~al.]{ferguson2025mhr}
-Aaron Ferguson, Ahmed A.~A. Osman, Berta Bescos, et~al.
-\newblock {MHR}: Momentum human rig.
-\newblock \emph{arXiv preprint arXiv:2511.15586}, 2025.
-
-\bibitem[Saito et~al.(2026)Saito, Li, de~Ruyter, Guerrero,
-  et~al.]{saito2026soma}
-Jun Saito, Jiefeng Li, Michael de~Ruyter, Miguel Guerrero, et~al.
-\newblock {SOMA}: Unifying parametric human body models.
-\newblock \emph{arXiv preprint arXiv:2603.16858}, 2026.
-
 \bibitem[Dembia et~al.(2020)Dembia, Bianco, Falisse, Hicks, and
   Delp]{dembia2020moco}
 Christopher~L. Dembia, Nicholas~A. Bianco, Antoine Falisse, Jennifer~L. Hicks,
@@ -96,6 +96,14 @@ Keenon Werling, Nicholas~A. Bianco, Michael Raitor, Jon Stingel, Jennifer~L.
 \newblock {AddBiomechanics}: Automating model scaling, inverse kinematics, and
   inverse dynamics from human motion data through sequential optimization.
 \newblock \emph{PLOS ONE}, 18\penalty0 (11):\penalty0 e0295152, 2023.
+
+\bibitem[Caggiano et~al.(2022)Caggiano, Wang, Durandau, Sartori, and
+  Kumar]{caggiano2022myosuite}
+Vittorio Caggiano, Huawei Wang, Guillaume Durandau, Massimo Sartori, and Vikash
+  Kumar.
+\newblock {MyoSuite}: A contact-rich simulation suite for musculoskeletal motor
+  control.
+\newblock \emph{arXiv preprint arXiv:2205.13600}, 2022.
 
 \bibitem[Uhlrich et~al.(2023)Uhlrich, Falisse, Kidzi{\'n}ski, Muccini, Ko,
   Chaudhari, Hicks, and Delp]{uhlrich2023opencap}
@@ -177,14 +185,6 @@ Yunyue Wei, Chenhui Zuo, Shanning Zhuang, Haixin Gong, Yaming Liu, and Yanan
 \newblock Scaling whole-body human musculoskeletal behavior emulation for
   specificity and diversity.
 \newblock \emph{arXiv preprint arXiv:2603.29332}, 2026.
-
-\bibitem[Caggiano et~al.(2022)Caggiano, Wang, Durandau, Sartori, and
-  Kumar]{caggiano2022myosuite}
-Vittorio Caggiano, Huawei Wang, Guillaume Durandau, Massimo Sartori, and Vikash
-  Kumar.
-\newblock {MyoSuite}: A contact-rich simulation suite for musculoskeletal motor
-  control.
-\newblock \emph{arXiv preprint arXiv:2205.13600}, 2022.
 
 \bibitem[Wu et~al.(2002)Wu, Siegler, Allard, et~al.]{wu2002isb}
 Ge~Wu, Sorin Siegler, Paul Allard, et~al.
