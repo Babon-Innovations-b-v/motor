@@ -57,16 +57,16 @@
 \maketitle
 
 \begin{abstract}
-\noindent Physical AI and biomechanics both model the moving human body, with different tools, and each field is
-fragmented across many body models, skeletons and solvers, so that a body from physical AI reaches biomechanics only
-through a chain built for it, and biomechanics' solvers do not run at physical AI's scale. MOTOR, an open,
-standardised solver between the two, accepts any physical-AI body as a skin mesh, segment rotations and joint centres,
-drives one musculoskeletal model, MyoFullBody, and returns ISB joint angles, joint moments, ground reaction forces and
-muscle forces, running on physical AI's own GPU stack, Newton and MuJoCo Warp. With landmark constants calibrated once
-over synthetic bodies, it solves each recording's whole trial as one optimisation, finding movement, ground forces and
-muscle forces together with the bones held inside the body's skin. We validate it as a single-camera video pipeline on
-the OpenCap LabValidation cohort against motion capture, force plates and EMG, beside OpenCap's two-camera and
-monocular pipelines; the results await the solver's full run.
+\noindent Physical AI now estimates and generates moving human bodies at a scale biomechanics has never had, yet
+the two fields cannot use each other's work: each is fragmented across its own body models, skeletons and solvers,
+and every bridge between them is a chain built for one body model and one route. We present MOTOR, a single open
+solver that takes any body physical AI produces, given as a skin mesh, segment rotations and joint centres, and
+returns what biomechanics measures: joint angles in the ISB conventions, joint moments, ground reaction forces and the
+force in every muscle. It runs on physical AI's own GPU stack, Newton and MuJoCo Warp, because the more complex the
+bodies and movements we simulate, the more parallel a solver has to be. We validate it as a single-camera video
+pipeline on OpenCap's LabValidation cohort, against OpenCap itself. One solver in place of
+many chains gives physical AI bodies that obey the mechanics of muscle and bone, and gives biomechanics the scale to
+study the forces behind human movement far beyond the laboratory.
 
 \smallskip
 \noindent\gaptext{MOTOR's headline numbers beside OpenCap's: joint angles, ground forces, joint moments, EMG, time
