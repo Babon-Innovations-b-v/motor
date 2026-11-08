@@ -1,4 +1,4 @@
-\begin{thebibliography}{36}
+\begin{thebibliography}{40}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -104,6 +104,21 @@ Marilyn Keller, Keenon Werling, Soyong Shin, Scott Delp, Sergi Pujades,
   humans.
 \newblock \emph{ACM Transactions on Graphics}, 42\penalty0 (6), 2023.
 
+\bibitem[Xia et~al.(2025)Xia, Zhou, Vouga, Huang, and Pavlakos]{xia2025hsmr}
+Yan Xia, Xiaowei Zhou, Etienne Vouga, Qixing Huang, and Georgios Pavlakos.
+\newblock Reconstructing humans with a biomechanically accurate skeleton.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition (CVPR)}, pages 5355--5365, 2025.
+
+\bibitem[Koleini et~al.(2025)Koleini, Saleem, Wang, Xue, Helmy, and
+  Fenwick]{koleini2025biopose}
+Farnoosh Koleini, Muhammad~Usama Saleem, Pu~Wang, Hongfei Xue, Ahmed Helmy, and
+  Abbey Fenwick.
+\newblock {BioPose}: Biomechanically-accurate {3D} pose estimation from
+  monocular videos.
+\newblock In \emph{Proceedings of the IEEE/CVF Winter Conference on
+  Applications of Computer Vision (WACV)}, pages 6330--6339, 2025.
+
 \bibitem[Werling et~al.(2023)Werling, Bianco, Raitor, Stingel, Hicks, Collins,
   Delp, and Liu]{werling2023addbiomechanics}
 Keenon Werling, Nicholas~A. Bianco, Michael Raitor, Jon Stingel, Jennifer~L.
@@ -183,6 +198,12 @@ Jiefeng Li, Jinkun Cao, Haotian Zhang, Davis Rempe, Jan Kautz, Umar Iqbal, and
 \newblock {GENMO}: A {GENeralist} model for human {MOtion}.
 \newblock \emph{arXiv preprint arXiv:2505.01425}, 2025.
 
+\bibitem[Yang et~al.(2026)Yang, Kukreja, Pinkus, others, and
+  Kitani]{yang2026sam3dbody}
+Xitong Yang, Devansh Kukreja, Don Pinkus, others, and Kris Kitani.
+\newblock {SAM 3D Body}: Robust full-body human mesh recovery.
+\newblock \emph{arXiv preprint arXiv:2602.15989}, 2026.
+
 \bibitem[Rempe et~al.(2026)Rempe, Petrovich, Yuan, Zhang, Peng,
   et~al.]{rempe2026kimodo}
 Davis Rempe, Mathis Petrovich, Ye~Yuan, Haotian Zhang, Xue~Bin Peng, et~al.
@@ -234,6 +255,13 @@ Ge~Wu, Frans C.~T. van~der Helm, H.~E. J.~(DirkJan) Veeger, et~al.
   shoulder, elbow, wrist and hand.
 \newblock \emph{Journal of Biomechanics}, 38\penalty0 (5):\penalty0 981--992,
   2005.
+
+\bibitem[Jacobson et~al.(2013)Jacobson, Kavan, and
+  Sorkine-Hornung]{jacobson2013winding}
+Alec Jacobson, Ladislav Kavan, and Olga Sorkine-Hornung.
+\newblock Robust inside-outside segmentation using generalized winding numbers.
+\newblock \emph{ACM Transactions on Graphics}, 32\penalty0 (4):\penalty0
+  33:1--33:12, 2013.
 
 \bibitem[Zakka(2024)]{mink}
 Kevin Zakka.
