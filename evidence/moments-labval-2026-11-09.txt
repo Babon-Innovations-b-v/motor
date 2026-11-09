@@ -53,16 +53,16 @@ only which foot is down. Both feet summed, MAE %BW, unfiltered 100 Hz (x forward
   solving the ground from the pelvis' balance (OpenCap's tracking simulation splits by its contact spheres), not a bug.
 
 ## 3. the fixes and the rerun
-- ce12979f sim_body/rra: RRA's torso centre-of-mass step fitted all three of the torso's axes; the vertical one is no
+- 18fed046 sim_body/rra: RRA's torso centre-of-mass step fitted all three of the torso's axes; the vertical one is no
   moment's and was read off small tilts (98% of the 715 chain runs at the 10 cm cap, median move 15.5 cm). Now across
   the torso's mean up, as opensim-core's RRATool (x and z of its body).
-- f56e3735 sim_body, labval: the frames record each leading joint's own moment (`own torques`); the back's three are
+- 202bd660 sim_body, labval: the frames record each leading joint's own moment (`own torques`); the back's three are
   scored from L5/S1's own, not the coupled leader's (which carried L4/L5 at 0.185 and the abdomen at 0.643).
 Rerun: the chain's 720 inputs (labval/measure-final's targets, not refitted from video: the run's own fit, RRA and
 physics again) on the cluster under override moments-rra (EUR 40 from November's EUR 1800): 48 jobs of 15, 47 done
 in 217 min on 15 L4 nodes, EUR 22.73; the unfinished job's 17 again in jobs of 2, EUR 0.84; EUR 23.57 in all. 716 of
 720 ran: subject10_squats1 Cam1 and Cam4 (the fit did not stop in 3000 steps, as before), subject10_squats1_Cam3 and
-subject5_DJAsym3_Cam2 (their job's time). Scored by tools/labval validate --no-run at f56e3735; "before" = the chain's
+subject5_DJAsym3_Cam2 (their job's time). Scored by tools/labval validate --no-run at 202bd660; "before" = the chain's
 715 as scored for motor-labval-2026-11-09.txt (main's scorer).
 Effects separated (all, OpenCap's 15, %BW*ht): before 2.41; the RRA fix alone (the new runs, main's scorer) 2.43;
 with the back's own moment 2.36. Lumbar extension, bending, rotation: before 5.39, 3.62, 3.14; after 4.83, 3.29, 3.07.
