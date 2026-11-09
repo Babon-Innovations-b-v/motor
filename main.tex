@@ -13,7 +13,9 @@
 % results are the LabValidation run of 2026-11-07 with its residual reduction and physics run again on 2026-11-09 after
 % fixes 18fed046 and 202bd660 (paper/motor/evidence/moments-labval-2026-11-09.txt, "after (all its trials)" columns,
 % 716 of 720); measures that file does not hold (EMG per channel, vasti symmetry, signed offsets, time per step) are the
-% 2026-11-07 run's (paper/motor/evidence/labval-final-2026-11-07.txt), said where they are used. The whole-trial
+% 2026-11-07 run's (paper/motor/evidence/labval-final-2026-11-07.txt), said where they are used. Every comparison with
+% OpenCap is measured as OpenCap measures it (same activities, activities weighted equally, its camera positions):
+% paper/motor/evidence/comparison-2026-11-09.txt, the same 716 runs re-scored (#98 comment 6744969345). The whole-trial
 % solve appears only as future work in the discussion, its numbers from paper/motor/evidence/motor-labval-2026-11-09.txt.
 % OpenCap's numbers are its published ones; neither OpenCap nor PBL was rerun here.
 \usepackage{iftex}
@@ -62,18 +64,20 @@ solver that takes any body physical AI produces, in SOMA's unified form of skin 
 centres, drives the full-body musculoskeletal model MyoFullBody with it, and returns what biomechanics measures: joint
 angles in the ISB conventions, joint moments, ground reaction forces and the force in every muscle. It runs on
 physical AI's own GPU stack, Newton and MuJoCo Warp, because the more complex the bodies and movements we simulate,
-the more parallel a solver has to be. From one camera on OpenCap's LabValidation cohort, MOTOR's joint angle error
-is 5.16\dg{} (OpenCap Monocular: 4.8\dg) and its vertical ground force error from the 45\dg{} camera 11.5\% of body weight
-(OpenCap, two cameras: 11.4\%), in 66\,s per trial on one GPU against OpenCap's 44 to 70 minutes; its joint moments have twice
-OpenCap's error. One solver in place of many chains gives physical AI bodies
+the more parallel a solver has to be. From one camera on OpenCap's LabValidation cohort, its activities weighted
+equally as OpenCap weights them, MOTOR's joint angle error is 5.6\dg{} (OpenCap Monocular: 4.8\dg), its vertical
+ground force error 13.3\% of body weight (OpenCap, two cameras: 11.4\%; without drop jumps 10.5 against 6.8\%) and
+its joint moment error about twice OpenCap's, in 66\,s per trial on one GPU against the 44 to 70 minutes of
+OpenCap's recorded solves. One solver in place of many chains gives physical AI bodies
 that obey the mechanics of muscle and bone, and gives biomechanics the scale to study the forces behind human
 movement far beyond the laboratory.
 \end{abstract}
-% Abstract numbers: paper/motor/evidence/moments-labval-2026-11-09.txt, the "after (all its trials)" column ("envelope":
-% matched angle MAE 5.16, cMAE 3.06, GRF both vertical MAE 11.49; "all": joint moments 2.36, twice OpenCap's 1.2);
-% labval-final-2026-11-07.txt ("sim body wall seconds per step": total median 66.214 s; OpenCap's 11.4 and 1.2:
-% "OpenCap's published figures"); 4.8: arXiv:2603.24733 via
-% arXiv:2607.17639, abstract and Section 3.1; OpenCap's solves 2635 to 4196 s: #98 comment 6696117098.
+% Abstract numbers: paper/motor/evidence/comparison-2026-11-09.txt ("Cam1", mean, no drop jumps: angles15 5.62;
+% "Cam1+Cam3": mean, 4 activities: vert 13.29; mean, no drop jumps: vert 10.50; joint moments Cam1+Cam3 mean 4 2.17,
+% mean no DJ 1.69; OpenCap's published figures: angles 4.8 (Monocular), vertical 11.4 and 6.8, moments 1.22 and 0.80).
+% Moment ratios (about twice): 2.17 / 1.22 = 1.78, 1.69 / 0.80 = 2.11. 66 s:
+% labval-final-2026-11-07.txt ("sim body wall seconds per step": total median 66.214 s); OpenCap's solves 2635 to
+% 4196 s: our timing of the solves recorded in its LabValidation release, #98 comment 6696117098.
 
 \section{Related work}
 
@@ -279,58 +283,63 @@ cohort and reference, not rerun by us. We did not rerun PBL: the pretrained MeTR
 
 \begin{table}[t]
 \centering\footnotesize
-\caption{MOTOR beside OpenCap's published numbers. Angles on the matched set (45\dg{} camera, no drop jumps), the
-rest over all inputs; force in \% body weight, both feet; moments in \% weight $\times$ height.}
+\caption{MOTOR beside OpenCap's published numbers on the same activities, weighted equally (walking with its
+trunk-sway trials). MOTOR runs on each of OpenCap's $\pm$45\dg{} cameras alone, the runs pooled, or on the 45\dg{}
+camera where marked. Force in \% body weight, feet summed; moments in \% weight $\times$ height; MOTOR nine subjects,
+OpenCap ten.}
 \label{tab:headline}
 \begin{tabular}{@{}lccc@{}}
 \toprule
  & OpenCap, 2 cameras & OpenCap Monocular & MOTOR, 1 camera \\
 \midrule
-Joint angle MAE (centred), matched 15 (\dg) & 4.5 & 4.8 & 5.16 (3.06) \\
-Ground force MAE, vert.\ / ant.\ / med.-lat.\ & 11.4 / 3.5 / 3.8 & -- & 16.2 / 7.4 / 3.0 \\
-\quad vertical, 45\dg{} camera, no drop jumps & -- & -- & 11.5 \\
-Joint moment MAE, OpenCap's 15 & 1.2 & -- & 2.36 \\
-Vasti symmetry AUC vs EMG label (squats) & 0.83 & -- & 0.66 \\
-Time per trial & 44--70 min & -- & 66\,s \\
+Joint angles (\dg), no drop jumps, 45\dg{} camera$^a$ & 4.3 & 4.8 & 5.62 \\
+Ground force, vert.\ / ant.\ / med.-lat. & 11.4 / 3.5 / 3.8 & -- & 13.3 / 6.5 / 3.5 \\
+\quad no drop jumps & 6.8 / 1.8 / 3.3 & -- & 10.5 / 6.8 / 3.7 \\
+\quad walking stance, 45\dg{} camera$^b$ & 12.2 / 1.2 / 3.1 & 9.7 / 1.7 / 4.4 & 13.0 / 10.9 / 3.0 \\
+Joint moments, OpenCap's 15; no drop jumps & 1.22; 0.80 & -- & 2.17; 1.69 \\
+Vasti symmetry AUC, squats, Cam1 / Cam3 & 0.83 & -- & 0.62 / 0.83 \\
+Time per trial$^c$ & 44--70 min & -- & 66\,s \\
 \bottomrule
 \end{tabular}
+\par\smallskip\parbox{\linewidth}{\scriptsize $^a$OpenCap's 18 angles add pelvis rotation and subtalar angles. $^b$From OpenCap Monocular's paper, which states no stance threshold and no foot summation.
+$^c$OpenCap: our timing of the solves recorded with its dataset (Table~\ref{tab:timing}); MOTOR: one NVIDIA L4.}
 \end{table}
-% OpenCap 4.5: OpenCap paper, Results (read 2026-11-06 at journals.plos.org); 4.8: arXiv:2603.24733 via
-% arXiv:2607.17639, abstract and Section 3.1; OpenCap's kinetics and AUC: labval-final-2026-11-07.txt ("OpenCap's
-% published figures"); OpenCap's time: #98 comment 6696117098 (2635 to 4196 s, recorded solves, hardware not recorded).
-% MOTOR: moments-labval-2026-11-09.txt, "after (all its trials)": "envelope" (5.16, 3.06, GRF both vertical 11.49),
-% "all" (GRF 16.18 / 7.43 / 2.99, moments 2.36); labval-final-2026-11-07.txt: "vasti symmetry, after" (all, AUC EMG
-% label 0.66), "sim body wall seconds per step" (total median 66.214 s, one NVIDIA L4).
+% Every MOTOR number: paper/motor/evidence/comparison-2026-11-09.txt (the 716 runs of moments-labval-2026-11-09.txt,
+% re-scored per activity and camera; Cam1 and Cam3 are the +-45 deg pair by the dataset's calibration, its first
+% section). Angles: "Cam1", mean, no drop jumps, angles15 5.62. Forces: "Cam1+Cam3", mean, 4 activities 13.29 / 6.48
+% / 3.45; mean, no drop jumps 10.50 / 6.75 / 3.65. Walking stance: "walking's stance phase only", Cam1 summed 13.0 /
+% 10.9 / 3.0, per foot 20.2 / 9.8 / 3.3. Moments: Cam1+Cam3 mean 4 2.17, mean no DJ 1.69.
+% OpenCap's and OpenCap
+% Monocular's figures: the same file's last section ("OpenCap's published figures set beside these", from #98 comment
+% 6744969345: Uhlrich et al. 2023 Table 1, OpenCap Monocular sections 3.1, 3.2, 3.4 and Figs 3A and 5).
+% Vasti: Cam1 0.62, Cam3 0.83 (labval-final-2026-11-07.txt, "vasti symmetry, after"). Time: OpenCap's solves 2635 to
+% 4196 s, our timing, #98 comment 6696117098; MOTOR labval-final-2026-11-07.txt ("sim body wall seconds per step":
+% total median 66.214 s, one NVIDIA L4).
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.72\linewidth]{figures/grf.pdf}
-\caption{MOTOR's vertical ground force per foot against the plates (45\dg{} camera).}
-\label{fig:results}
-\end{figure}
-% Restored from commit 096ac587 (paper/motor/figures/grf.pdf, made in commit 244bae78 from the run of
-% labval-final-2026-11-07.txt).
 
-On the matched set, where OpenCap Monocular reports, MOTOR's joint angle error is 5.16\dg{} (95\% CI 4.77 to
-5.59\dg; Table~\ref{tab:headline}), 5.12\dg{} on the held-out subjects and 5.35\dg{} over all inputs. The vertical
-force under each foot follows the plates (Figure~\ref{fig:results}), with median correlations of 0.77 and
-0.79 on the held-out subjects. Summed over both feet, its error from the 45\dg{} camera is 11.5\% of body
-weight beside OpenCap's 11.4\% from two cameras, and the anterior force has twice OpenCap's error. The joint moments, 2.36\% of weight times height
-against OpenCap's 1.2\%, are 1.51 to 1.83\% without drop jumps. With the laboratory's kinematics and plate forces, MOTOR's moment
-computation is 0.4 to 0.8\% from the laboratory's inverse dynamics in walking, squats and sit-to-stand: the gap lies
-in the monocular inputs, about half in each, not in the dynamics (Appendix~\ref{app:moments}).
-% moments-labval-2026-11-09.txt, "after (all its trials)": "envelope" (5.16 [4.77, 5.59], 89 trials, 9 subjects, cMAE
-% 3.06), "held out 7-11, envelope" (5.12), "all" (5.35; GRF both vertical 16.18, anterior 7.43; moments 2.36), "held
-% out 7-11, all" (forces right/left vertical r, median over defined, 0.77 / 0.79), "activity ..." (moments squats
-% 1.55, walking 1.83, trunk sway 1.68, sit-to-stand 1.51).
+Weighted as OpenCap weights its activities, MOTOR's error over the fifteen matched angles from the 45\dg{} camera is
+5.62\dg{} against OpenCap Monocular's 4.8\dg{} over eighteen (Table~\ref{tab:headline}; 5.16\dg{} pooled over the 89
+recordings, 95\% CI 4.77 to 5.59\dg), and the vertical force under each foot follows the plates
+(Figure~\ref{fig:results}; median $r$ 0.77 and 0.79 on the held-out subjects). Summed over both feet from one of
+OpenCap's camera positions, its error is 13.3\% of body weight against OpenCap's 11.4\% from both, 10.5 against 6.8\%
+without the drop jumps and 13.0 against OpenCap Monocular's 9.7\% in walking stance from the 45\dg{} camera. The
+anterior force has two to four times OpenCap's error, the medio-lateral force about the same, and the joint moments
+2.17 against 1.22\% of weight times height (1.69 against 0.80\% without drop jumps); given the laboratory's
+kinematics and plate forces, MOTOR's moment computation is within 0.4 to 0.8\% of the laboratory's inverse dynamics
+outside the drop jumps: the gap lies in the monocular inputs, about half in each, not in the dynamics
+(Appendix~\ref{app:moments}).
+% Activity-weighted figures, stance, OpenCap's and Monocular's: comparison-2026-11-09.txt (as Table 1's comment;
+% ratios 10.50 / 6.8 = 1.54, anterior 6.48 / 3.5 = 1.85 and 6.75 / 1.8 = 3.75; medio-lateral 3.45 against 3.8 and
+% 3.65 against 3.3). Pooled: moments-labval-2026-11-09.txt, "after (all its trials)": "envelope" (5.16 [4.77, 5.59],
+% 89 trials, 9 subjects), "held out 7-11, all" (forces right/left vertical r, median over defined, 0.77 / 0.79).
 % moments-labval-2026-11-09.txt, section 1: 159 trials, "1 lab kin + lab grf" (walking 0.66, trunk sway 0.80, squats
-% 0.42, sit-to-stand 0.47; OpenCap 1.2), "2a run kin + lab grf" 1.74 and "2b lab kin + run grf" 2.24 against "0b"
+% 0.42, sit-to-stand 0.47), "2a run kin + lab grf" 1.74 and "2b lab kin + run grf" 2.24 against "0b"
 % 2.41 and "1" 1.28 ("each leaves about half").
 \section{Discussion}
 
 % Kimodo in SCORE: score/stages/sim_body/CLAUDE.md (the sim body stage solves each scene's clips).
 
-MOTOR's angles come within 0.4\dg{} of OpenCap Monocular's, whose input-quality gate, B3D found
+MOTOR's angles come within 0.8\dg{} of OpenCap Monocular's, whose input-quality gate, B3D found
 \cite{cotton2026b3d}, rejected 400 of 1693 clinical inputs, among them posterior and self-occluded views; MOTOR scores
 every recording that ran. B3D's per-frame regressor comes within half a degree of PBL's whole-trial optimisation, and
 both results suggest that optimising the whole trial buys little kinematic accuracy for its cost. Our own whole-trial solve, left to future work, bears this out. Built on PBL's structure with OpenCap's smooth contact
@@ -339,7 +348,7 @@ on twice as many matched frames (40 against 20\%), but no accuracy measure impro
 (angles 5.29\dg, vertical force 12.5\%, moments 2.67\%, EMG $r$ 0.15), at five times the time (309 against 66\,s).
 % B3D, read 2026-11-09 at arxiv.org/html/2608.29928, Sections 4.3 and A.10: the gate "rejects the posterior and
 % self-occluded views common here", 400 of 1693 inputs rejected on the clinical cohort, "may bias its reported
-% accuracy favorably"; Table 2 (3.66 against 3.24 deg). 0.4 = 5.16 - 4.8 (Table 1's sources).
+% accuracy favorably"; Table 2 (3.66 against 3.24 deg). 0.8 = 5.62 - 4.8 (Table 1's sources).
 % Whole-trial solve's numbers: paper/motor/evidence/motor-labval-2026-11-09.txt ("coverage": 713 of 720; "headline",
 % envelope: residual frames within 0.203 against 0.396, matched angle MAE 5.29 against 5.16, GRF both vertical 12.52
 % against 11.56, anterior 7.98 [7.58, 8.31] against 8.37 [7.95, 8.75]; all: moments 2.67 against 2.41, EMG r 0.15
@@ -621,8 +630,11 @@ reports its results \cite{gilon2026monocular} and on which the author's earlier 
 one time shift of the reference before scoring. Joint angles are scored by mean absolute error (MAE), centred MAE
 (cMAE, with each trial's constant offset removed, which separates tracking from offset), root mean square error and
 Pearson's $r$, with a 95\% confidence interval from a per-subject bootstrap of 20{,}000 draws. Ground reaction forces
-are scored as OpenCap scores them, in \% of body weight on three axes with both feet summed, and per foot by the
-correlation of the vertical force. Joint moments are scored in \% of weight times height over OpenCap's fifteen, with
+are filtered as OpenCap filters them and scored in \% of body weight on three axes with both feet summed (OpenCap does
+not state whether its errors are per foot or summed), and per foot by the correlation of the vertical force. Set
+beside OpenCap, each measure is averaged over the activities with equal weight, as OpenCap averages its own, and
+taken from OpenCap's camera positions, its two at $\pm$45\dg{} (Cam1 and Cam3) or OpenCap Monocular's 45\dg{} camera;
+elsewhere it is pooled over the recordings. Joint moments are scored in \% of weight times height over OpenCap's fifteen, with
 the knee adduction moment's early-stance peak reported separately. In squats, the vasti symmetry index is scored by its
 AUC against the EMG's own asymmetry label. Activations are scored by on--off agreement and correlation with each EMG
 channel, and the pelvis residual by the share of frames within both limits.
@@ -630,8 +642,10 @@ channel, and the pelvis residual by the share of frames within both limits.
 % (labval-final-2026-11-07.txt header).
 
 \paragraph{Time.} The solve time is MOTOR's wall time per trial on one named GPU, from the input body to its output,
-set beside OpenCap's recorded solves in its LabValidation release, whose hardware is not recorded.
-% #98 comment 6696117098 ("Timing comparison").
+set beside our own timing of the OpenCap solves recorded in its LabValidation release, whose hardware is not
+recorded.
+% #98 comment 6696117098 ("Timing comparison"). Averaging and cameras: comparison-2026-11-09.txt (header and its
+% first section: Cam1 and Cam3 the +-45 deg pair by the dataset's calibration).
 
 \paragraph{Joint definitions.}
 \label{app:joints}
@@ -773,9 +787,17 @@ Cam4 & 143 & 5.23 & 3.05 & 19.14 & 0.78 / 0.74 & 2.38 & 0.22 \\
 % right/left vertical r (median over defined), joint moments, EMG r mean.
 
 \subsection{Ground reaction force}
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.72\linewidth]{figures/grf.pdf}
+\caption{MOTOR's vertical ground force per foot against the plates (45\dg{} camera).}
+\label{fig:results}
+\end{figure}
+% Restored from commit 096ac587 (paper/motor/figures/grf.pdf, made in commit 244bae78 from the run of
+% labval-final-2026-11-07.txt).
 \begin{center}\small
-\captionof{table}{Ground reaction force per activity: MAE in \% body weight on three axes with both feet summed, as
-OpenCap scored it, and the share of the plate's stance frames on which MOTOR's foot carries force.}
+\captionof{table}{Ground reaction force per activity, all five cameras: MAE in \% body weight on three axes with
+both feet summed, filtered as OpenCap filters it, the activities' means weighted equally as OpenCap's, and the share of the plate's stance frames on which MOTOR's foot carries force.}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
 Activity & vertical & anterior & medio-lateral & 3-axis mean & stance carried R / L \\
@@ -787,12 +809,16 @@ squats & 6.25 & 3.53 & 3.31 & 4.4 & 0.99 / 0.95 \\
 sit-to-stand & 11.28 & 4.51 & 3.27 & 6.4 & 0.82 / 0.82 \\
 drop jump & 19.27 & 5.64 & 2.56 & 9.2 & 0.76 / 0.71 \\
 \midrule
-OpenCap, 2 cameras & 11.4 & 3.5 & 3.8 & 6.2 & -- \\
+mean of the four activities & 13.68 & 6.28 & 3.09 & 7.7 & -- \\
+\quad without drop jumps & 11.82 & 6.49 & 3.26 & 7.2 & -- \\
+OpenCap, 2 cameras, mean & 11.4 & 3.5 & 3.8 & 6.2 & -- \\
+\quad without drop jumps & 6.8 & 1.8 & 3.3 & 4.0 & -- \\
 \bottomrule
 \end{tabular}
 \end{center}
 % moments-labval-2026-11-09.txt, after columns ("all", "activity ...": GRF both vertical, anterior-posterior,
-% medial-lateral, 3-axis mean, stance carried); labval-final-2026-11-07.txt ("OpenCap's published figures").
+% medial-lateral, 3-axis mean, stance carried); the means of the activities: comparison-2026-11-09.txt ("all five",
+% mean, 4 activities and no drop jumps; OpenCap's from its last section; 3-axis: the mean of the three).
 Per foot over all 716 inputs, the vertical force's MAE is 17.8\% of body weight on the right and 17.2\% on the left.
 In the 7 November run, the centre of pressure, with each trial's constant offset removed, was 47.6\,mm off in the
 anterior and 20.2\,mm in the medio-lateral direction, and each stance's vertical impulse 12.6\% below the plate's on
@@ -835,11 +861,15 @@ mass alone leaves it at 2.43\%, so the gain is the back's moment read at L5/S1.
 % moments-labval-2026-11-09.txt, section 3 ("Effects separated": before 2.41, the RRA fix alone 2.43, with the back's
 % own moment 2.36; lumbar extension, bending, rotation before 5.39, 3.62, 3.14, after 4.83, 3.29, 3.07).
 In walking, the early-stance knee adduction moment's peak is overestimated: on the left knee MOTOR's mean is 3.4\%
-of weight times height against the lab's 2.1\%, a mean error of 1.5\% against OpenCap's published 0.30\%. In the
+of weight times height against the lab's 2.1\%, a mean error of 1.5\%. From the 45\dg{} camera, both knees together,
+the first peak's error is 1.97\%, against OpenCap Monocular's 0.36\% and two-camera OpenCap's 0.41\% (0.30\% in
+OpenCap's own paper); from Cam3 it is 0.75\%. In the
 recorded runs, the knee of the leg far from the camera sits 37 to 44\,mm from the centre of pressure in the frontal
 plane where the lab has 9 to 16\,mm, which accounts for most of this error.
 % moments-labval-2026-11-09.txt ("all", after: early-stance kam l: mae 1.505, mean run 3.435, mean reference 2.051);
-% OpenCap's 0.30: labval-final-2026-11-07.txt ("OpenCap's published figures"); far leg: #98 comment 6721835197.
+% Per camera: comparison-2026-11-09.txt ("walking's early-stance knee adduction moment peak": Cam1 1.97, Cam3 0.75;
+% Monocular's 0.36 and 0.41 in its last section); OpenCap's 0.30: labval-final-2026-11-07.txt ("OpenCap's published
+% figures"); far leg: #98 comment 6721835197.
 
 \subsection{Where the moment error comes from}
 \label{app:moments}
@@ -853,7 +883,8 @@ ankle onto MyoFullBody's. Table~\ref{tab:moments-inputs} gives the result, score
 \begin{table}[h]
 \centering\small
 \caption{Joint moment MAE over OpenCap's 15 (\% weight $\times$ height) from MOTOR's moment computation with each
-input from the laboratory or from the monocular run; 159 trials. OpenCap's published mean: 1.2.}
+input from the laboratory or from the monocular run; 159 trials. OpenCap's published errors: 2.50, 0.68, 0.97 and
+0.75 in drop jumps, sit-to-stand, squats and walking, 1.22 over the four.}
 \label{tab:moments-inputs}
 \begin{tabular}{@{}llcccccc@{}}
 \toprule
@@ -866,7 +897,8 @@ monocular & monocular & 2.41 & 3.65 & 1.57 & 1.58 & 1.78 & 1.71 \\
 \bottomrule
 \end{tabular}
 \end{table}
-% moments-labval-2026-11-09.txt, section 1 (rows 1, 2a, 2b, 0b; 0b reproduces the recorded run's 2.53 within 0.1-0.2).
+% moments-labval-2026-11-09.txt, section 1 (rows 1, 2a, 2b, 0b; 0b reproduces the recorded run's 2.53 within 0.1-0.2);
+% OpenCap's per activity: comparison-2026-11-09.txt, last section.
 With the laboratory's inputs the computation is within 0.42 to 0.80\% of the laboratory's inverse dynamics outside
 the drop jumps, whose remaining 2.41\% is the lumbar: the reference swings about 60\% of weight times height at
 landing. Each monocular input alone leaves about half of the full error. The legs' moments carry the ground force's
@@ -935,7 +967,8 @@ semiten l & 0.66 & 0.18 & -0.053 & vasmed r & 0.76 & 0.41 & -0.033 \\
 
 \begin{center}\small
 \captionof{table}{OpenCap's vasti symmetry index in squats, per camera, in the 7 November run: the AUC of MOTOR's index against the asymmetry
-the instructions asked for and against the EMG's own label (index over 1.15). OpenCap: 0.83 against the EMG label.}
+the instructions asked for and against the EMG's own label (index over 1.15). OpenCap: 0.83 against the EMG label,
+from its two cameras at $\pm$45\dg, the positions of Cam1 and Cam3.}
 \begin{tabular}{@{}lcc@{}}
 \toprule
 Camera & AUC, instructed & AUC, EMG label \\
@@ -949,7 +982,8 @@ all & 0.73 & 0.66 \\
 \bottomrule
 \end{tabular}
 \end{center}
-% labval-final-2026-11-07.txt ("vasti symmetry, after").
+% labval-final-2026-11-07.txt ("vasti symmetry, after"); Cam1 and Cam3 the +-45 deg pair: comparison-2026-11-09.txt
+% (its first section, from the dataset's calibration); OpenCap's pair: Uhlrich et al. 2023 via #98 comment 6744969345.
 
 \subsection{Time per step}
 \begin{center}\small
@@ -978,8 +1012,9 @@ total & 66.214 & 34.843 & 788.668 & 0.871 \\
 
 \begin{table}[h]
 \centering\small
-\caption{Wall time per trial, MOTOR against published solves. OpenCap's solves are from its LabValidation release (80
-muscles, windows of 0.99 to 1.68\,s, solve only, hardware not recorded).}
+\caption{Wall time per trial, MOTOR against published solves. OpenCap's solves are those recorded in its
+LabValidation release, timed by us (80 muscles, windows of 0.99 to 1.68\,s, solve only, hardware not recorded); its
+paper reports 37\,min for one squat on one server. MOTOR's time excludes the video pose estimate.}
 \label{tab:timing}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -993,7 +1028,8 @@ MOTOR, one L4 & LabValidation, 715 trials & 66\,s median (35--789\,s) \\
 \end{tabular}
 \end{table}
 % OpenCap's solves, Moco's and CMC's times: #98 comment 6696117098 ("Timing comparison": OpenCap's Setup.yaml and
-% Stats.npy, Dembia 2020, Rajagopal 2016); MOTOR's row: labval-final-2026-11-07.txt ("sim body wall seconds per
+% Stats.npy, Dembia 2020, Rajagopal 2016); 37 min: 2 min kinematics and 35 min kinetics for one squat, Uhlrich et al.
+% 2023, Results, field study (#98 comment 6744969345); MOTOR's row: labval-final-2026-11-07.txt ("sim body wall seconds per
 % step": total median 66.214, min 34.843, max 788.668).
 
 \begin{figure}[h]
@@ -1024,12 +1060,13 @@ their pelvis tilt, elbows and matched error worse.
 % paper/motor/evidence/static-neutral-2026-11-08.txt.
 
 \paragraph{Forces, residuals and the two sides.} The pelvis residual stays above its limits, the anterior ground
-reaction force error is about twice OpenCap's, and the activation pattern is partly off (rectus femoris does not
+reaction force error is about twice OpenCap's over its four activities and nearly four times without drop jumps, and the activation pattern is partly off (rectus femoris does not
 follow its EMG, $r=-0.08$). The ground force is split between the feet by the skin points that reach the floor and by
 the pelvis' balance, so a foot that GEM-X places a little higher carries less: in the squat of
 Figure~\ref{fig:teaser}, at its deepest frame, the left foot carries 90\% of body weight and the right 53\%, and the
 calf muscles follow that split rather than the symmetric movement.
-% labval-final-2026-11-07.txt ("residuals", "all", "EMG per channel"); teaser-2026-11-07.json (frame 216: left 90.13,
+% labval-final-2026-11-07.txt ("residuals", "all", "EMG per channel"); anterior against OpenCap:
+% comparison-2026-11-09.txt ("Cam1+Cam3" 6.48 against 3.5, 6.75 against 1.8); teaser-2026-11-07.json (frame 216: left 90.13,
 % right 52.93 %BW); inside/contact/__init__.py (STANCE_HIGH comment: GEM-X's standing sole 18 to 28 mm up).
 
 \paragraph{Camera sampling and fast movements.} GEM-X resamples every clip to 30\,Hz, so an impact or a push-off is
