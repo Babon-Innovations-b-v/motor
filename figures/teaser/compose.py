@@ -125,7 +125,7 @@ def figure(renders, record, out):
     colour_bar(fig, [start - GAP + 0.004, 0.42, 0.012, 0.36])
     left = start + 0.135
     traces(fig, (left, 0.17, 0.995 - left, 0.69), record)
-    fitted(fig, fig.text(left - 0.075, 0.93, "(c) Outputs of the warm start", ha="left", va="bottom"),
+    fitted(fig, fig.text(left - 0.075, 0.93, "(c) MOTOR's outputs", ha="left", va="bottom"),
            1.0 - left + 0.075)
     fig.savefig(out, dpi=600)  # the panels embedded at 600 dpi
     print(f"teaser: {out}")

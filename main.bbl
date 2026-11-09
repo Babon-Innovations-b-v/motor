@@ -140,14 +140,6 @@ R.~James Cotton.
   motion capture.
 \newblock \emph{arXiv preprint arXiv:2402.17192}, 2024.
 
-\bibitem[Cotton et~al.(2026)Cotton, Peiffer, Williamson, Leske, and
-  Pavlakos]{cotton2026b3d}
-R.~James Cotton, J.~D. Peiffer, Lucinda Williamson, John Leske, and Georgios
-  Pavlakos.
-\newblock Biomechanical {3D} body: Self-supervised distillation of
-  biomechanical pose from a {3D} body foundation model.
-\newblock \emph{arXiv preprint arXiv:2608.29928}, 2026.
-
 \bibitem[Li et~al.(2026)Li, Wang, Ziliotto, Simos, Kovecses, Durandau, and
   Mathis]{li2026musclemimic}
 Chengkun Li, Cheryl Wang, Bianca Ziliotto, Merkourios Simos, Jozsef Kovecses,
@@ -171,6 +163,14 @@ J.~D. Peiffer, Kunal Shah, Irina Djuraskovic, Shawana Anarwala, Kayan Abdou,
   analysis from a handheld smartphone.
 \newblock \emph{arXiv preprint arXiv:2507.08268}, 2025.
 
+\bibitem[Cotton et~al.(2026)Cotton, Peiffer, Williamson, Leske, and
+  Pavlakos]{cotton2026b3d}
+R.~James Cotton, J.~D. Peiffer, Lucinda Williamson, John Leske, and Georgios
+  Pavlakos.
+\newblock Biomechanical {3D} body: Self-supervised distillation of
+  biomechanical pose from a {3D} body foundation model.
+\newblock \emph{arXiv preprint arXiv:2608.29928}, 2026.
+
 \bibitem[Keller et~al.(2023)Keller, Werling, Shin, Delp, Pujades, Liu, and
   Black]{keller2023skel}
 Marilyn Keller, Keenon Werling, Soyong Shin, Scott Delp, Sergi Pujades,
@@ -178,13 +178,6 @@ Marilyn Keller, Keenon Werling, Soyong Shin, Scott Delp, Sergi Pujades,
 \newblock From skin to skeleton: Towards biomechanically accurate {3D} digital
   humans.
 \newblock \emph{ACM Transactions on Graphics}, 42\penalty0 (6), 2023.
-
-\bibitem[Cotton(2025)]{cotton2025kintwin}
-R.~James Cotton.
-\newblock {KinTwin}: Imitation learning with torque and muscle driven
-  biomechanical models enables precise replication of able-bodied and impaired
-  movement from markerless motion capture.
-\newblock \emph{arXiv preprint arXiv:2505.13436}, 2025.
 
 \bibitem[Wu et~al.(2002)Wu, Siegler, Allard, et~al.]{wu2002isb}
 Ge~Wu, Sorin Siegler, Paul Allard, et~al.
@@ -202,13 +195,6 @@ Ge~Wu, Frans C.~T. van~der Helm, H.~E. J.~(DirkJan) Veeger, et~al.
 \newblock \emph{Journal of Biomechanics}, 38\penalty0 (5):\penalty0 981--992,
   2005.
 
-\bibitem[Macklin(2022)]{warp}
-Miles Macklin.
-\newblock {Warp}: A high-performance {Python} framework for {GPU} simulation
-  and graphics, 2022.
-\newblock URL \url{https://github.com/NVIDIA/warp}.
-\newblock Version 1.18.0 used here. Apache-2.0 since 1.6.2.
-
 \bibitem[Holzbaur et~al.(2005)Holzbaur, Murray, and Delp]{holzbaur2005upper}
 Katherine R.~S. Holzbaur, Wendy~M. Murray, and Scott~L. Delp.
 \newblock A model of the upper extremity for simulating musculoskeletal surgery
@@ -216,6 +202,12 @@ Katherine R.~S. Holzbaur, Wendy~M. Murray, and Scott~L. Delp.
 \newblock \emph{Annals of Biomedical Engineering}, 33\penalty0 (6):\penalty0
   829--840, 2005.
 \newblock \doi{10.1007/s10439-005-3320-7}.
+
+\bibitem[Wang et~al.(2025)]{wang2025moge2}
+Ruicheng Wang et~al.
+\newblock {MoGe-2}: Accurate monocular geometry with metric scale and sharp
+  details.
+\newblock \emph{arXiv preprint arXiv:2507.02546}, 2025.
 
 \bibitem[Hicks et~al.(2015)Hicks, Uchida, Seth, Rajagopal, and
   Delp]{hicks2015model}
@@ -227,6 +219,20 @@ Jennifer~L. Hicks, Thomas~K. Uchida, Ajay Seth, Apoorva Rajagopal, and Scott~L.
   (2):\penalty0 020905, 2015.
 \newblock \doi{10.1115/1.4029304}.
 
+\bibitem[Macklin(2022)]{warp}
+Miles Macklin.
+\newblock {Warp}: A high-performance {Python} framework for {GPU} simulation
+  and graphics, 2022.
+\newblock URL \url{https://github.com/NVIDIA/warp}.
+\newblock Version 1.18.0 used here. Apache-2.0 since 1.6.2.
+
+\bibitem[Colley(2026)]{mujocowarp1835}
+M.~Colley.
+\newblock Direct {MyoSuite} {CPU}/{CUDA} muscle rollouts drift at the wrist
+  with contacts disabled.
+\newblock {MuJoCo Warp} issue 1835, 2026.
+\newblock URL \url{https://github.com/google-deepmind/mujoco_warp/issues/1835}.
+
 \bibitem[Li et~al.(2025)Li, Cao, Zhang, Rempe, Kautz, Iqbal, and
   Yuan]{li2025genmo}
 Jiefeng Li, Jinkun Cao, Haotian Zhang, Davis Rempe, Jan Kautz, Umar Iqbal, and
@@ -234,11 +240,13 @@ Jiefeng Li, Jinkun Cao, Haotian Zhang, Davis Rempe, Jan Kautz, Umar Iqbal, and
 \newblock {GENMO}: A {GENeralist} model for human {MOtion}.
 \newblock \emph{arXiv preprint arXiv:2505.01425}, 2025.
 
-\bibitem[Wang et~al.(2025)]{wang2025moge2}
-Ruicheng Wang et~al.
-\newblock {MoGe-2}: Accurate monocular geometry with metric scale and sharp
-  details.
-\newblock \emph{arXiv preprint arXiv:2507.02546}, 2025.
+\bibitem[S{\'a}r{\'a}ndi et~al.(2021)S{\'a}r{\'a}ndi, Linder, Arras, and
+  Leibe]{sarandi2021metrabs}
+Istv{\'a}n S{\'a}r{\'a}ndi, Timm Linder, Kai~O. Arras, and Bastian Leibe.
+\newblock {MeTRAbs}: Metric-scale truncation-robust heatmaps for absolute {3D}
+  human pose estimation.
+\newblock \emph{IEEE Transactions on Biometrics, Behavior, and Identity
+  Science}, 3\penalty0 (1):\penalty0 16--30, 2021.
 
 \bibitem[Saul et~al.(2015)Saul, Hu, Goehler, Vidt, Daly, Velisar, and
   Murray]{saul2015benchmarking}
@@ -269,13 +277,6 @@ Joey~P{\'a}olo Kardolus, Daan Hendriks, and Jaap Jansen.
 \newblock Direct clinical joint angle extraction from parametric body model
   rotation matrices.
 \newblock \emph{arXiv preprint arXiv:2607.17639}, 2026.
-
-\bibitem[Colley(2026)]{mujocowarp1835}
-M.~Colley.
-\newblock Direct {MyoSuite} {CPU}/{CUDA} muscle rollouts drift at the wrist
-  with contacts disabled.
-\newblock {MuJoCo Warp} issue 1835, 2026.
-\newblock URL \url{https://github.com/google-deepmind/mujoco_warp/issues/1835}.
 
 \bibitem[Rajagopal et~al.(2016)Rajagopal, Dembia, DeMers, Delp, Hicks, and
   Delp]{rajagopal2016fullbody}
