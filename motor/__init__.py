@@ -1,5 +1,8 @@
-"""MOTOR: one standardised solver between physical AI and biomechanics (docs/bible.md).
+"""MOTOR: a GPU solver that puts physical-AI bodies (SOMA's form) onto MyoFullBody and returns joint angles, joint
+moments, ground reaction forces and muscle forces, on Newton and MuJoCo Warp (README.md, docs/bible.md).
 
-Empty until the solver moves in from SCORE with its history (SCORE #101): its modules land here, each with its one
-test file beside it (a `tests/` folder counting as its module), as docs/bible.md `workflow/module-standard` says.
+`motor.run` is the run (`python -m motor.run <job.json> <out.json>`); each step is a module beside it, each with its
+interface in its `__init__.py` and its one test file: `bone_groups`, `ground`, `solvers`, `landmarks`,
+`calibration`, `volumes`, `model`, `batched`, `sizing`, `resting`, `myo`, `contact`, `fit`, `muscles`, `rra`,
+`records`, `following` (the measures of how closely the fit follows the body) and `trial` (the whole-trial solve).
 """

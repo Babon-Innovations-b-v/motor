@@ -89,7 +89,9 @@ Plans and reports for agents stay on the issue; the owner gets only the decision
 - **A new `.md` file needs the owner's go-ahead** (`md_guard.py`); a decision goes on its issue and into its bible
   chapter. A new code directory's `CLAUDE.md` overlay needs no ask.
 - **No loose files.** A directory holds subdirectories plus framework files only (`__init__.py`, `conftest.py`,
-  `pyproject.toml`, `uv.lock`, `Makefile`, `README.md`, `CLAUDE.md`, `CONTEXT.md`, `LICENSE`, `docs/bible.md`).
+  `pyproject.toml`, `uv.lock`, `Makefile`, `README.md`, `CLAUDE.md`, `CONTEXT.md`, `LICENSE`, `NOTICE`, `__main__.py`,
+  `docs/bible.md`; `NOTICE` the owner's go, 2026-11-15). `vendor/` (third-party files kept as released, with their own
+  licences) is exempt.
 - **Commits**: imperative, scoped (`module: description`).
 - **Quality is never a cost lever.** No lower settings, resolutions or iteration counts for anything that ships;
   savings come from waste only.

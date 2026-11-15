@@ -1,0 +1,58 @@
+MOTOR
+Copyright (c) 2026 Babon-Innovations-b-v
+
+MOTOR's own code is licensed under the MIT licence (LICENSE). The MIT licence covers this repository's code only.
+The third-party parts below keep their own licences.
+
+================================================================================
+Vendored in this repository
+================================================================================
+
+vendor/myofullbody/musclemimic_models/
+  MyoFullBody as published by MuscleMimic Models 1.0.6 (github.com/amathislab/musclemimic_models), copied unchanged
+  from its wheel on PyPI:
+    https://files.pythonhosted.org/packages/c2/bf/deaa309a8af26e759c6ff49340707279b1c814eb4fd2916fb0636bce3d7e/musclemimic_models-1.0.6-py3-none-any.whl
+    sha256 88b096fe072bd5d2cfcc88ec43ffef27a73bc5a54e6699d3bda0e92a76a03bea
+  Its licence and notice files are kept verbatim in vendor/myofullbody/licenses/:
+    LICENSE     Apache License 2.0 (MuscleMimic Models)
+    NOTICE      MuscleMimic Models' own notice: MyoSuite and myo_sim (MyoHub, Apache-2.0), MuJoCo (Apache-2.0), and the
+                OpenSim models the MyoSuite models were converted from
+    MoBL-ARMS.txt  the MoBL-ARMS upper limb model's licence
+
+  The models MyoFullBody is derived from, and their licences (from MuscleMimic Models' NOTICE):
+    - MyoSuite, myo_sim (MyoHub): Apache License 2.0; every mesh (STL) comes from myo_sim.
+    - Rajagopal full-body gait model (simtk.org/projects/full_body): MIT. Rajagopal et al. 2016,
+      doi:10.1109/TBME.2016.2586891.
+    - Constrained lumbar spine model (simtk.org/projects/lumbarspine): MIT. Bruno et al. 2015.
+    - Second-hand finger model (simtk.org/projects/hand_muscle): MIT. McFarland et al. 2019.
+    - MoBL-ARMS upper limb model (simtk.org/projects/upexdyn), the arm and hand: BSD 3-clause licence, released
+      SOLELY FOR NON-COMMERCIAL PURPOSES (research, academic, evaluation and personal uses); commercial use requires
+      a commercial licence from its copyright holders (North Carolina State University, Northwestern University,
+      Rehabilitation Institute of Chicago, Valparaiso University, Wake Forest University, Stanford University and
+      VA HCS). Its use must be acknowledged by citing Saul et al. 2015, doi:10.1080/10255842.2014.916698, and
+      McFarland et al. 2019, doi:10.1115/1.4043035. Full text: vendor/myofullbody/licenses/MoBL-ARMS.txt.
+
+  So: MyoFullBody's arm and hand, and with them MyoFullBody as a whole, may be used here for non-commercial purposes
+  only. MOTOR's MIT licence does not change that.
+
+================================================================================
+Downloaded at run time, never kept in this repository
+================================================================================
+
+examples/soma_template downloads SOMA-X's assets (huggingface.co/nvidia/SOMA-X, tag v0.3.3, revision
+3648707b69e1b1dcf14c473e30613266b786b9f1): SOMA_template_rig.usda, SOMA_neutral.npz and its LICENSE. Apache License
+2.0 (github.com/NVlabs/SOMA-X). SOMA-X's SMPL, SMPL-X and MANO model files are never fetched or used.
+
+================================================================================
+Python dependencies (pyproject.toml), installed, not vendored
+================================================================================
+
+  newton 1.7.0, newton-usd-schemas 0.5.0     Apache-2.0
+  mujoco 3.15.0, mujoco-warp 3.15.0          Apache-2.0
+  warp-lang 1.18.0                           Apache-2.0
+  mink 1.3.0                                 Apache-2.0
+  qpsolvers 4.13.0                           LGPL-3.0 (used as an unmodified library)
+  daqp 0.10.3                                MIT
+  usd-core 26.8                              Tomorrow Open Source Technology License 1.0
+  numpy, scipy, python-fcl                   BSD
+  typing_extensions                          PSF-2.0

@@ -57,14 +57,49 @@ ALLOWLIST = {}
 
 # Test files whose checks run only under `__main__` (pytest finds none of them).
 MAIN_ONLY_DATE = "2026-11-08"
-MAIN_ONLY = ()
+MAIN_ONLY = (
+    "motor/batched/test_every_frame_on_the_card_is_mujocos_own_to_its_rounding.py",
+    "motor/bone_groups/test_each_segment_rides_and_groups_bodies_of_its_side_joint_to_joint.py",
+    "motor/calibration/test_the_calibration_lays_each_bone_along_its_segment.py",
+    "motor/contact/test_only_a_point_within_gap_is_pushed.py",
+    "motor/fit/_card/tests/test_the_card_step_and_projection_equal_the_cpu_prototype.py",
+    "motor/fit/test_the_solver_gives_back_the_pose_and_constants_that_made_its_targets.py",
+    "motor/ground/test_a_point_stands_on_the_highest_ground_in_reach.py",
+    "motor/landmarks/test_every_landmark_resolves_on_both_models_where_worked_by_hand.py",
+    "motor/model/test_couplings_keep_a_follower_on_its_leader.py",
+    "motor/muscles/test_a_standing_body_is_carried_by_the_ground.py",
+    "motor/myo/test_the_persons_file_builds_in_newton_as_mujoco_compiles_it.py",
+    "motor/records/test_a_record_keeps_poses_meshes_and_moves_as_worked_by_hand.py",
+    "motor/resting/test_no_muscle_stands_past_its_resting_length.py",
+    "motor/rra/test_rra_moves_mass_and_torso_by_the_mean_residual.py",
+    "motor/sizing/test_a_sized_group_is_somas_length_and_weight.py",
+    "motor/solvers/test_each_solver_meets_a_hand_worked_answer.py",
+    "motor/volumes/test_a_segment_weighs_its_volume_at_its_density.py",
+)
 
 # Test files that may print `skipped` (a check not run on this box), each with the reason.
-MAY_SKIP = {}
+MAY_SKIP = {
+    "motor/fit/_card/tests/test_the_card_step_and_projection_equal_the_cpu_prototype.py": "needs a CUDA card",
+}
 
 # Test files holding more than one test function, each with its count on the day it was listed.
 FUNCTION_DEBT_DATE = "2026-11-08"
-FUNCTION_DEBT = {}
+FUNCTION_DEBT = {
+    "motor/bone_groups/test_each_segment_rides_and_groups_bodies_of_its_side_joint_to_joint.py": 2,
+    "motor/calibration/test_the_calibration_lays_each_bone_along_its_segment.py": 8,
+    "motor/contact/test_only_a_point_within_gap_is_pushed.py": 5,
+    "motor/fit/test_the_solver_gives_back_the_pose_and_constants_that_made_its_targets.py": 24,
+    "motor/ground/test_a_point_stands_on_the_highest_ground_in_reach.py": 5,
+    "motor/landmarks/test_every_landmark_resolves_on_both_models_where_worked_by_hand.py": 7,
+    "motor/model/test_couplings_keep_a_follower_on_its_leader.py": 4,
+    "motor/muscles/test_a_standing_body_is_carried_by_the_ground.py": 3,
+    "motor/myo/test_the_persons_file_builds_in_newton_as_mujoco_compiles_it.py": 10,
+    "motor/records/test_a_record_keeps_poses_meshes_and_moves_as_worked_by_hand.py": 6,
+    "motor/rra/test_rra_moves_mass_and_torso_by_the_mean_residual.py": 14,
+    "motor/sizing/test_a_sized_group_is_somas_length_and_weight.py": 6,
+    "motor/solvers/test_each_solver_meets_a_hand_worked_answer.py": 4,
+    "motor/volumes/test_a_segment_weighs_its_volume_at_its_density.py": 3,
+}
 
 # The docstring line that excuses a second test function, with its reason after the colon.
 SECOND_TEST = re.compile(r"^\s*second test:\s*\S", re.IGNORECASE | re.MULTILINE)
