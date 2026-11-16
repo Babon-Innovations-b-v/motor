@@ -1,0 +1,9 @@
+MyoFullBody as the sim body runs it, 2026-11-06 (issue #70): the sized model file the base jump run of
+speed-2026-11-06.txt wrote (mean_jump.xml, main 9dfd12b1), counted with MuJoCo 3.15.0 (MjModel).
+bodies (nbody, world included): 162
+bodies carrying a bone mesh: 86
+joints (njnt): 132  by type: {'mjJNT_FREE': 1, 'mjJNT_HINGE': 121, 'mjJNT_SLIDE': 10}
+joints coupled to another joint (joint equality constraints): 36
+free root joints: 1
+joints neither coupled nor the free root: 95
+muscle actuators (nu): 416

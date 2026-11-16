@@ -1,0 +1,828 @@
+MOTOR on OpenCap LabValidation: the final full validation, 2026-11-07 (issue #98).
+Chain: branch keep/motor-final at 5996a8f2 (keep/motor-depth's contact per foot, skin fitted to SOMA, drift removed,
+RRA's move kept; motor-so's knee ligaments; motor-seat's chair and box), GEM-X at MoGe-2's field of view, seen floor.
+Run: every one of the 720 single-camera inputs (144 non-static trials x 5 cameras) prepared afresh and run on the
+cluster's cards, `python -m tools.labval.validate` (tools/labval/validate.py), at most 24 cards at once.
+Scoring: tools/labval at 5996a8f2 (time shift, overlap 0.5, per-subject bootstrap of 20,000 draws), the moments
+against OpenSim's inverse dynamics remade on the lab's own model and settings (tools/labval/opensim_reference.py).
+"before" = the previous full validation (the earlier chain's runs of the same 720 inputs, 700 of which came back),
+scored again here with the same scorer, so before and after differ only in the chain.
+Held out: subjects 7 to 11 were never used to choose any setting. Training: subjects 2 to 5.
+
+## tuning (the only settings chosen on LabValidation; subjects 2-5, 36 Cam1 trials, against the force plates)
+Objective: per-foot vertical GRF RMSE (%BW) and r against the plates; never the reference joint angles (the matched
+MAE is equal on every arm). Medians over the 36 trials: RMSE right/left %BW, r right/left, residual force %BW and
+moment %BW*height.
+ A GAP 5 mm, STANCE_HIGH 30 mm, SHARE_COST 0.03: RMSE 28.5/28.1, r 0.74/0.76, F 7.9, M 9.35
+ B GAP 10 mm:                                    RMSE 29.7/28.0, r 0.74/0.77, F 6.6, M 8.40
+ C STANCE_HIGH 50 mm:                            RMSE 28.1/26.7, r 0.75/0.78, F 7.8, M 9.11
+ D SHARE_COST 0.1:                               RMSE 28.6/28.0, r 0.74/0.76, F 7.9, M 9.35
+ E STANCE_HIGH 80 mm (24 of 36 trials):          RMSE 28.1/27.2, against C's 28.1/27.2 on the same 24
+Chosen: C (commit a40b66d6). A drop jump box's 0.10 m clearance from the landed feet was chosen on subjects 2-5's
+drop jumps the same way (commit 11edb366).
+
+## run
+720 inputs prepared; 48 jobs of 15 on NVIDIA L4 cards, at most 24 at once. The run stopped at its EUR 25 ticket (less 10%): 45 of 48 jobs done in 76 min on 24 nodes, 1824 node minutes, EUR 24.07. The 45 inputs of its 3 unfinished jobs (6 DJ, 6 DJAsym, 6 STS, 3 squats, 6 squatsAsym, 9 walking, 9 walkingTS; 9 of them Cam1) ran after on a second ticket of EUR 6, the same code: 8 jobs of 6 on at most 8 L4 cards, 7 done in 65 min, EUR 3.75; the unfinished job's 6 again one a job, 5 done in 15 min, EUR 1.67. Whole run EUR 29.49. 715 of 720 inputs ran: 4 failed in the fit (subject10_squats1 Cam1 and Cam4: the card's fit solve did not stop in 3000 steps; subject11_DJAsym4_Cam1 and subject3_DJ4_Cam1: a frame's fit did not converge in 300 steps), 1 passed its job's time (subject10_squats1_Cam3, 10.4 min).
+
+before: the previous full validation, 700 trials; after: this run, 715 trials; 698 trials in both. Every measure re-pooled here with the same code; 'common' rows use only the trials both have.
+
+## envelope (Cam1, no drop jumps)
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    72                          89                          72                          72                          
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     5.23 [4.82, 5.67]           5.16 [4.77, 5.59]           5.23 [4.82, 5.67]           5.23 [4.83, 5.68]           
+matched angle cMAE deg                                    3.10 [2.92, 3.31]           3.06 [2.86, 3.28]           3.10 [2.92, 3.31]           3.10 [2.92, 3.31]           
+GRF right vertical MAE %BW                                45.24 [39.49, 51.17]        17.78 [16.78, 18.70]        45.24 [39.49, 51.17]        17.67 [16.49, 18.80]        
+GRF right vertical RMSE %BW (mean)                        56.1                        24.2                        56.1                        24.1                        
+GRF right vertical r (mean over defined, n)               0.08 (69)                   0.59 (89)                   0.08 (69)                   0.60 (72)                   
+GRF right vertical r (median, never loaded = 0)           0.04                        0.82                        0.04                        0.82                        
+GRF left vertical MAE %BW                                 43.91 [41.75, 46.31]        17.94 [16.35, 19.53]        43.91 [41.75, 46.31]        18.16 [16.41, 19.83]        
+GRF left vertical RMSE %BW (mean)                         54.9                        25.1                        54.9                        25.4                        
+GRF left vertical r (mean over defined, n)                0.02 (60)                   0.74 (89)                   0.02 (60)                   0.73 (72)                   
+GRF left vertical r (median, never loaded = 0)            0.00                        0.86                        0.00                        0.86                        
+GRF both vertical MAE %BW                                 64.32 [60.58, 68.17]        11.56 [10.55, 12.73]        64.32 [60.58, 68.17]        11.51 [10.26, 12.89]        
+GRF both vertical RMSE %BW (mean)                         75.1                        15.3                        75.1                        15.1                        
+GRF both vertical r (mean over defined, n)                0.21 (71)                   0.72 (89)                   0.21 (71)                   0.72 (72)                   
+GRF both vertical r (median, never loaded = 0)            0.18                        0.81                        0.18                        0.80                        
+GRF both anterior-posterior MAE %BW                       7.61 [7.02, 8.12]           8.37 [7.95, 8.75]           7.61 [7.02, 8.12]           8.53 [7.82, 9.09]           
+GRF both medial-lateral MAE %BW                           4.17 [3.74, 4.60]           3.41 [3.11, 3.70]           4.17 [3.74, 4.60]           3.39 [3.04, 3.70]           
+forces right vertical r (median over defined)             0.13                        0.80                        0.13                        0.81                        
+forces right vertical RMSE %BW (median)                   55.1                        26.8                        55.1                        26.5                        
+forces left vertical r (median over defined)              -0.05                       0.84                        -0.05                       0.85                        
+forces left vertical RMSE %BW (median)                    58.8                        25.7                        58.8                        26.2                        
+GRF both 3-axis MAE %BW (mean)                            25.4                        7.8                         25.4                        7.8                         
+stance carried right                                      0.34                        0.87                        0.34                        0.88                        
+stance carried left                                       0.17                        0.85                        0.17                        0.86                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.010                       0.203                       0.010                       0.203                       
+KAM (walking) right peak error %bw.ht                     1.49 [1.18, 1.79]           1.44 [1.19, 1.70]           1.49 [1.18, 1.79]           1.42 [1.12, 1.72]           
+KAM (walking) right rmse %bw.ht                           1.80 [1.53, 2.03]           1.72 [1.52, 1.93]           1.80 [1.53, 2.03]           1.69 [1.47, 1.94]           
+KAM (walking) left peak error %bw.ht                      2.85 [2.29, 3.44]           2.08 [1.72, 2.52]           2.85 [2.29, 3.44]           2.10 [1.60, 2.60]           
+KAM (walking) left rmse %bw.ht                            2.65 [2.20, 3.16]           1.91 [1.74, 2.10]           2.65 [2.20, 3.16]           1.89 [1.61, 2.14]           
+joint moments, OpenCap's 15, MAE %BW*ht                   1.71 [1.65, 1.76]           1.77 [1.68, 1.86]           1.71 [1.65, 1.76]           1.78 [1.69, 1.87]           
+early-stance external kam l                               {"mae %bw.ht": 1.838, "mean run %bw.ht": 3.959, "mean reference %bw.ht": 2.158, "r2 of subject means": 0.146, "trials": 13, "subjects": 6}{"mae %bw.ht": 2.057, "mean run %bw.ht": 4.169, "mean reference %bw.ht": 2.112, "r2 of subject means": 0.084, "trials": 48, "subjects": 9}{"mae %bw.ht": 1.838, "mean run %bw.ht": 3.959, "mean reference %bw.ht": 2.158, "r2 of subject means": 0.146, "trials": 13, "subjects": 6}{"mae %bw.ht": 2.174, "mean run %bw.ht": 4.273, "mean reference %bw.ht": 2.099, "r2 of subject means": 0.047, "trials": 40, "subjects": 9}
+early-stance external kam r                               {"mae %bw.ht": 1.017, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.492, "r2 of subject means": 0.022, "trials": 3, "subjects": 3}{"mae %bw.ht": 1.148, "mean run %bw.ht": 2.413, "mean reference %bw.ht": 3.561, "r2 of subject means": 0.246, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.017, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.492, "r2 of subject means": 0.022, "trials": 3, "subjects": 3}{"mae %bw.ht": 1.068, "mean run %bw.ht": 2.525, "mean reference %bw.ht": 3.594, "r2 of subject means": 0.138, "trials": 8, "subjects": 4}
+early-stance kam l                                        {"mae %bw.ht": 1.897, "mean run %bw.ht": 3.959, "mean reference %bw.ht": 2.094, "r2 of subject means": 0.161, "trials": 13, "subjects": 6}{"mae %bw.ht": 2.11, "mean run %bw.ht": 4.169, "mean reference %bw.ht": 2.059, "r2 of subject means": 0.064, "trials": 48, "subjects": 9}{"mae %bw.ht": 1.897, "mean run %bw.ht": 3.959, "mean reference %bw.ht": 2.094, "r2 of subject means": 0.161, "trials": 13, "subjects": 6}{"mae %bw.ht": 2.228, "mean run %bw.ht": 4.273, "mean reference %bw.ht": 2.045, "r2 of subject means": 0.035, "trials": 40, "subjects": 9}
+early-stance kam r                                        {"mae %bw.ht": 0.935, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.41, "r2 of subject means": 0.1, "trials": 3, "subjects": 3}{"mae %bw.ht": 1.054, "mean run %bw.ht": 2.413, "mean reference %bw.ht": 3.467, "r2 of subject means": 0.498, "trials": 9, "subjects": 4}{"mae %bw.ht": 0.935, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.41, "r2 of subject means": 0.1, "trials": 3, "subjects": 3}{"mae %bw.ht": 0.984, "mean run %bw.ht": 2.525, "mean reference %bw.ht": 3.51, "r2 of subject means": 0.382, "trials": 8, "subjects": 4}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.60 (0.48 to 0.68)         0.64 (0.45 to 0.72)         0.60 (0.48 to 0.68)         0.63 (0.45 to 0.73)         
+EMG r, mean over channels (range)                         0.07 (-0.06 to 0.23)        0.23 (-0.26 to 0.36)        0.07 (-0.06 to 0.23)        0.23 (-0.24 to 0.37)        
+EMG lag s, mean over channels (range)                     0.001 (-0.134 to 0.124)     0.011 (-0.116 to 0.091)     0.001 (-0.134 to 0.124)     0.014 (-0.118 to 0.082)     
+
+## all
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    700                         715                         698                         698                         
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     5.36 [4.96, 5.81]           5.35 [4.94, 5.81]           5.36 [4.95, 5.81]           5.36 [4.95, 5.82]           
+matched angle cMAE deg                                    3.26 [3.07, 3.46]           3.25 [3.06, 3.44]           3.26 [3.07, 3.45]           3.26 [3.06, 3.45]           
+GRF right vertical MAE %BW                                36.62 [35.01, 38.39]        17.79 [16.70, 18.83]        36.67 [35.06, 38.40]        17.77 [16.66, 18.86]        
+GRF right vertical RMSE %BW (mean)                        52.8                        28.8                        52.8                        28.9                        
+GRF right vertical r (mean over defined, n)               0.32 (618)                  0.71 (714)                  0.32 (616)                  0.71 (697)                  
+GRF right vertical r (median, never loaded = 0)           0.32                        0.78                        0.32                        0.78                        
+GRF left vertical MAE %BW                                 35.92 [35.19, 36.68]        17.18 [15.98, 18.33]        35.95 [35.22, 36.72]        17.18 [15.97, 18.36]        
+GRF left vertical RMSE %BW (mean)                         51.0                        27.7                        51.0                        27.8                        
+GRF left vertical r (mean over defined, n)                0.19 (482)                  0.70 (706)                  0.19 (482)                  0.70 (689)                  
+GRF left vertical r (median, never loaded = 0)            0.00                        0.78                        0.00                        0.78                        
+GRF both vertical MAE %BW                                 53.77 [51.11, 56.88]        16.22 [14.58, 17.99]        53.82 [51.16, 56.91]        16.33 [14.64, 18.13]        
+GRF both vertical RMSE %BW (mean)                         74.2                        28.6                        74.2                        28.9                        
+GRF both vertical r (mean over defined, n)                0.40 (647)                  0.75 (715)                  0.40 (645)                  0.75 (698)                  
+GRF both vertical r (median, never loaded = 0)            0.36                        0.84                        0.36                        0.84                        
+GRF both anterior-posterior MAE %BW                       6.45 [6.22, 6.66]           7.41 [7.09, 7.72]           6.45 [6.22, 6.66]           7.40 [7.06, 7.74]           
+GRF both medial-lateral MAE %BW                           3.19 [3.05, 3.34]           2.99 [2.79, 3.18]           3.19 [3.05, 3.35]           2.98 [2.78, 3.16]           
+forces right vertical r (median over defined)             0.38                        0.78                        0.38                        0.78                        
+forces right vertical RMSE %BW (median)                   51.6                        27.3                        51.7                        27.2                        
+forces left vertical r (median over defined)              0.20                        0.78                        0.20                        0.78                        
+forces left vertical RMSE %BW (median)                    48.8                        26.5                        48.8                        26.5                        
+GRF both 3-axis MAE %BW (mean)                            21.1                        8.9                         21.2                        8.9                         
+stance carried right                                      0.33                        0.82                        0.33                        0.82                        
+stance carried left                                       0.20                        0.79                        0.20                        0.79                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.009                       0.206                       0.009                       0.206                       
+KAM (walking) right peak error %bw.ht                     1.64 [1.36, 1.91]           1.88 [1.61, 2.13]           1.64 [1.36, 1.91]           1.89 [1.62, 2.14]           
+KAM (walking) right rmse %bw.ht                           1.85 [1.68, 2.00]           1.92 [1.80, 2.07]           1.85 [1.68, 2.00]           1.93 [1.80, 2.07]           
+KAM (walking) left peak error %bw.ht                      2.51 [2.22, 2.82]           1.75 [1.45, 2.08]           2.51 [2.22, 2.82]           1.74 [1.43, 2.09]           
+KAM (walking) left rmse %bw.ht                            2.40 [2.20, 2.61]           1.70 [1.58, 1.84]           2.40 [2.20, 2.61]           1.69 [1.56, 1.84]           
+joint moments, OpenCap's 15, MAE %BW*ht                   2.45 [2.33, 2.60]           2.41 [2.29, 2.56]           2.45 [2.33, 2.60]           2.43 [2.31, 2.58]           
+early-stance external kam l                               {"mae %bw.ht": 1.468, "mean run %bw.ht": 3.301, "mean reference %bw.ht": 2.141, "r2 of subject means": 0.356, "trials": 63, "subjects": 9}{"mae %bw.ht": 1.471, "mean run %bw.ht": 3.455, "mean reference %bw.ht": 2.105, "r2 of subject means": 0.34, "trials": 235, "subjects": 9}{"mae %bw.ht": 1.468, "mean run %bw.ht": 3.301, "mean reference %bw.ht": 2.141, "r2 of subject means": 0.356, "trials": 63, "subjects": 9}{"mae %bw.ht": 1.471, "mean run %bw.ht": 3.448, "mean reference %bw.ht": 2.102, "r2 of subject means": 0.36, "trials": 227, "subjects": 9}
+early-stance external kam r                               {"mae %bw.ht": 1.062, "mean run %bw.ht": 3.172, "mean reference %bw.ht": 3.578, "r2 of subject means": 0.01, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.121, "mean run %bw.ht": 3.475, "mean reference %bw.ht": 3.558, "r2 of subject means": 0.064, "trials": 36, "subjects": 4}{"mae %bw.ht": 1.062, "mean run %bw.ht": 3.172, "mean reference %bw.ht": 3.578, "r2 of subject means": 0.01, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.102, "mean run %bw.ht": 3.532, "mean reference %bw.ht": 3.566, "r2 of subject means": 0.04, "trials": 35, "subjects": 4}
+early-stance kam l                                        {"mae %bw.ht": 1.506, "mean run %bw.ht": 3.301, "mean reference %bw.ht": 2.089, "r2 of subject means": 0.281, "trials": 63, "subjects": 9}{"mae %bw.ht": 1.509, "mean run %bw.ht": 3.455, "mean reference %bw.ht": 2.051, "r2 of subject means": 0.348, "trials": 235, "subjects": 9}{"mae %bw.ht": 1.506, "mean run %bw.ht": 3.301, "mean reference %bw.ht": 2.089, "r2 of subject means": 0.281, "trials": 63, "subjects": 9}{"mae %bw.ht": 1.509, "mean run %bw.ht": 3.448, "mean reference %bw.ht": 2.049, "r2 of subject means": 0.367, "trials": 227, "subjects": 9}
+early-stance kam r                                        {"mae %bw.ht": 1.02, "mean run %bw.ht": 3.172, "mean reference %bw.ht": 3.494, "r2 of subject means": 0.015, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.071, "mean run %bw.ht": 3.475, "mean reference %bw.ht": 3.472, "r2 of subject means": 0.26, "trials": 36, "subjects": 4}{"mae %bw.ht": 1.02, "mean run %bw.ht": 3.172, "mean reference %bw.ht": 3.494, "r2 of subject means": 0.015, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.056, "mean run %bw.ht": 3.532, "mean reference %bw.ht": 3.482, "r2 of subject means": 0.217, "trials": 35, "subjects": 4}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.64 (0.54 to 0.69)         0.66 (0.51 to 0.75)         0.64 (0.54 to 0.69)         0.66 (0.51 to 0.76)         
+EMG r, mean over channels (range)                         0.12 (0.03 to 0.26)         0.23 (-0.08 to 0.42)        0.12 (0.03 to 0.26)         0.23 (-0.07 to 0.42)        
+EMG lag s, mean over channels (range)                     -0.006 (-0.081 to 0.112)    -0.026 (-0.144 to 0.051)    -0.006 (-0.080 to 0.111)    -0.027 (-0.145 to 0.051)    
+
+## held out 7-11, all
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    392                         396                         391                         391                         
+subjects                                                  5                           5                           5                           5                           
+matched angle MAE deg                                     5.14 [4.69, 5.63]           5.13 [4.68, 5.63]           5.14 [4.69, 5.63]           5.14 [4.69, 5.64]           
+matched angle cMAE deg                                    3.02 [2.90, 3.16]           3.02 [2.89, 3.16]           3.02 [2.90, 3.16]           3.02 [2.90, 3.16]           
+GRF right vertical MAE %BW                                36.48 [33.95, 39.57]        17.66 [16.34, 18.81]        36.51 [34.00, 39.57]        17.63 [16.30, 18.78]        
+GRF right vertical RMSE %BW (mean)                        52.8                        28.6                        52.8                        28.6                        
+GRF right vertical r (mean over defined, n)               0.30 (341)                  0.71 (396)                  0.30 (340)                  0.72 (391)                  
+GRF right vertical r (median, never loaded = 0)           0.32                        0.78                        0.32                        0.78                        
+GRF left vertical MAE %BW                                 35.72 [34.70, 36.84]        17.29 [15.38, 19.17]        35.76 [34.70, 36.88]        17.26 [15.34, 19.16]        
+GRF left vertical RMSE %BW (mean)                         50.6                        27.7                        50.6                        27.8                        
+GRF left vertical r (mean over defined, n)                0.20 (276)                  0.71 (389)                  0.20 (276)                  0.71 (384)                  
+GRF left vertical r (median, never loaded = 0)            0.00                        0.79                        0.00                        0.79                        
+GRF both vertical MAE %BW                                 54.33 [53.19, 55.13]        16.28 [13.58, 19.05]        54.37 [53.22, 55.13]        16.38 [13.66, 19.12]        
+GRF both vertical RMSE %BW (mean)                         74.7                        28.0                        74.7                        28.2                        
+GRF both vertical r (mean over defined, n)                0.39 (358)                  0.75 (396)                  0.39 (357)                  0.74 (391)                  
+GRF both vertical r (median, never loaded = 0)            0.34                        0.85                        0.34                        0.85                        
+GRF both anterior-posterior MAE %BW                       6.52 [6.33, 6.72]           7.56 [7.13, 7.91]           6.53 [6.34, 6.72]           7.58 [7.16, 7.93]           
+GRF both medial-lateral MAE %BW                           3.27 [3.11, 3.47]           3.04 [2.77, 3.23]           3.27 [3.11, 3.48]           3.03 [2.76, 3.22]           
+forces right vertical r (median over defined)             0.37                        0.77                        0.37                        0.78                        
+forces right vertical RMSE %BW (median)                   51.5                        27.2                        51.5                        26.9                        
+forces left vertical r (median over defined)              0.17                        0.79                        0.17                        0.79                        
+forces left vertical RMSE %BW (median)                    48.6                        25.8                        48.7                        25.7                        
+GRF both 3-axis MAE %BW (mean)                            21.4                        9.0                         21.4                        9.0                         
+stance carried right                                      0.29                        0.82                        0.29                        0.82                        
+stance carried left                                       0.21                        0.79                        0.21                        0.79                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.008                       0.213                       0.008                       0.212                       
+KAM (walking) right peak error %bw.ht                     1.63 [1.25, 2.05]           2.09 [1.82, 2.34]           1.63 [1.25, 2.05]           2.10 [1.82, 2.34]           
+KAM (walking) right rmse %bw.ht                           1.81 [1.54, 2.03]           2.01 [1.82, 2.21]           1.81 [1.54, 2.03]           2.01 [1.81, 2.21]           
+KAM (walking) left peak error %bw.ht                      2.46 [2.08, 2.83]           1.71 [1.33, 2.12]           2.46 [2.08, 2.83]           1.70 [1.32, 2.12]           
+KAM (walking) left rmse %bw.ht                            2.38 [2.11, 2.62]           1.75 [1.58, 1.96]           2.38 [2.11, 2.62]           1.76 [1.58, 1.96]           
+joint moments, OpenCap's 15, MAE %BW*ht                   2.43 [2.33, 2.55]           2.41 [2.30, 2.53]           2.43 [2.33, 2.54]           2.42 [2.32, 2.54]           
+early-stance external kam l                               {"mae %bw.ht": 1.657, "mean run %bw.ht": 3.887, "mean reference %bw.ht": 2.395, "r2 of subject means": 0.095, "trials": 31, "subjects": 5}{"mae %bw.ht": 1.627, "mean run %bw.ht": 3.733, "mean reference %bw.ht": 2.241, "r2 of subject means": 0.245, "trials": 125, "subjects": 5}{"mae %bw.ht": 1.657, "mean run %bw.ht": 3.887, "mean reference %bw.ht": 2.395, "r2 of subject means": 0.095, "trials": 31, "subjects": 5}{"mae %bw.ht": 1.627, "mean run %bw.ht": 3.733, "mean reference %bw.ht": 2.241, "r2 of subject means": 0.245, "trials": 125, "subjects": 5}
+early-stance external kam r                               {"mae %bw.ht": 1.062, "mean run %bw.ht": 3.172, "mean reference %bw.ht": 3.578, "r2 of subject means": 0.01, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.121, "mean run %bw.ht": 3.475, "mean reference %bw.ht": 3.558, "r2 of subject means": 0.064, "trials": 36, "subjects": 4}{"mae %bw.ht": 1.062, "mean run %bw.ht": 3.172, "mean reference %bw.ht": 3.578, "r2 of subject means": 0.01, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.102, "mean run %bw.ht": 3.532, "mean reference %bw.ht": 3.566, "r2 of subject means": 0.04, "trials": 35, "subjects": 4}
+early-stance kam l                                        {"mae %bw.ht": 1.705, "mean run %bw.ht": 3.887, "mean reference %bw.ht": 2.345, "r2 of subject means": 0.024, "trials": 31, "subjects": 5}{"mae %bw.ht": 1.666, "mean run %bw.ht": 3.733, "mean reference %bw.ht": 2.183, "r2 of subject means": 0.256, "trials": 125, "subjects": 5}{"mae %bw.ht": 1.705, "mean run %bw.ht": 3.887, "mean reference %bw.ht": 2.345, "r2 of subject means": 0.024, "trials": 31, "subjects": 5}{"mae %bw.ht": 1.666, "mean run %bw.ht": 3.733, "mean reference %bw.ht": 2.183, "r2 of subject means": 0.256, "trials": 125, "subjects": 5}
+early-stance kam r                                        {"mae %bw.ht": 1.02, "mean run %bw.ht": 3.172, "mean reference %bw.ht": 3.494, "r2 of subject means": 0.015, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.071, "mean run %bw.ht": 3.475, "mean reference %bw.ht": 3.472, "r2 of subject means": 0.26, "trials": 36, "subjects": 4}{"mae %bw.ht": 1.02, "mean run %bw.ht": 3.172, "mean reference %bw.ht": 3.494, "r2 of subject means": 0.015, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.056, "mean run %bw.ht": 3.532, "mean reference %bw.ht": 3.482, "r2 of subject means": 0.217, "trials": 35, "subjects": 4}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.64 (0.55 to 0.71)         0.67 (0.52 to 0.77)         0.64 (0.55 to 0.71)         0.67 (0.52 to 0.77)         
+EMG r, mean over channels (range)                         0.11 (0.01 to 0.24)         0.24 (-0.09 to 0.44)        0.11 (0.01 to 0.24)         0.24 (-0.09 to 0.44)        
+EMG lag s, mean over channels (range)                     -0.004 (-0.069 to 0.114)    -0.022 (-0.137 to 0.039)    -0.004 (-0.069 to 0.114)    -0.023 (-0.139 to 0.038)    
+
+## held out 7-11, envelope
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    44                          49                          44                          44                          
+subjects                                                  5                           5                           5                           5                           
+matched angle MAE deg                                     5.18 [4.61, 5.76]           5.12 [4.57, 5.70]           5.18 [4.61, 5.76]           5.19 [4.61, 5.78]           
+matched angle cMAE deg                                    2.93 [2.78, 3.07]           2.91 [2.76, 3.05]           2.93 [2.78, 3.07]           2.94 [2.78, 3.08]           
+GRF right vertical MAE %BW                                44.57 [35.09, 54.05]        18.00 [17.11, 18.81]        44.57 [35.09, 54.05]        17.72 [16.89, 18.52]        
+GRF right vertical RMSE %BW (mean)                        55.5                        24.2                        55.5                        23.9                        
+GRF right vertical r (mean over defined, n)               0.10 (42)                   0.62 (49)                   0.10 (42)                   0.66 (44)                   
+GRF right vertical r (median, never loaded = 0)           0.04                        0.80                        0.04                        0.82                        
+GRF left vertical MAE %BW                                 44.60 [41.82, 47.76]        18.84 [17.01, 20.51]        44.60 [41.82, 47.76]        18.83 [16.98, 20.81]        
+GRF left vertical RMSE %BW (mean)                         55.4                        26.1                        55.4                        26.2                        
+GRF left vertical r (mean over defined, n)                -0.02 (40)                  0.69 (49)                   -0.02 (40)                  0.69 (44)                   
+GRF left vertical r (median, never loaded = 0)            -0.07                       0.84                        -0.07                       0.84                        
+GRF both vertical MAE %BW                                 62.63 [58.39, 66.48]        11.88 [10.41, 13.73]        62.63 [58.39, 66.48]        12.27 [10.70, 14.31]        
+GRF both vertical RMSE %BW (mean)                         73.3                        15.5                        73.3                        15.9                        
+GRF both vertical r (mean over defined, n)                0.25 (43)                   0.73 (49)                   0.25 (43)                   0.71 (44)                   
+GRF both vertical r (median, never loaded = 0)            0.22                        0.80                        0.22                        0.78                        
+GRF both anterior-posterior MAE %BW                       7.85 [7.23, 8.42]           8.70 [8.37, 9.05]           7.85 [7.23, 8.42]           9.03 [8.57, 9.50]           
+GRF both medial-lateral MAE %BW                           4.35 [3.89, 4.77]           3.64 [3.33, 3.97]           4.35 [3.89, 4.77]           3.60 [3.25, 3.96]           
+forces right vertical r (median over defined)             0.13                        0.78                        0.13                        0.79                        
+forces right vertical RMSE %BW (median)                   54.8                        26.8                        54.8                        26.6                        
+forces left vertical r (median over defined)              -0.08                       0.81                        -0.08                       0.81                        
+forces left vertical RMSE %BW (median)                    60.9                        26.3                        60.9                        26.2                        
+GRF both 3-axis MAE %BW (mean)                            24.9                        8.1                         24.9                        8.3                         
+stance carried right                                      0.33                        0.87                        0.33                        0.87                        
+stance carried left                                       0.18                        0.85                        0.18                        0.85                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.011                       0.203                       0.011                       0.188                       
+KAM (walking) right peak error %bw.ht                     1.61 [1.14, 1.94]           1.62 [1.25, 1.98]           1.61 [1.14, 1.94]           1.61 [1.25, 2.00]           
+KAM (walking) right rmse %bw.ht                           1.82 [1.41, 2.17]           1.84 [1.53, 2.14]           1.82 [1.41, 2.17]           1.82 [1.53, 2.14]           
+KAM (walking) left peak error %bw.ht                      2.96 [2.11, 3.74]           2.31 [1.75, 2.94]           2.96 [2.11, 3.74]           2.31 [1.73, 2.94]           
+KAM (walking) left rmse %bw.ht                            2.75 [2.11, 3.38]           2.09 [1.88, 2.29]           2.75 [2.11, 3.38]           2.13 [1.94, 2.31]           
+joint moments, OpenCap's 15, MAE %BW*ht                   1.77 [1.74, 1.79]           1.83 [1.74, 1.92]           1.77 [1.74, 1.79]           1.84 [1.74, 1.94]           
+early-stance external kam l                               {"mae %bw.ht": 1.838, "mean run %bw.ht": 4.082, "mean reference %bw.ht": 2.311, "r2 of subject means": 0.008, "trials": 7, "subjects": 3}{"mae %bw.ht": 2.305, "mean run %bw.ht": 4.564, "mean reference %bw.ht": 2.259, "r2 of subject means": 0.024, "trials": 25, "subjects": 5}{"mae %bw.ht": 1.838, "mean run %bw.ht": 4.082, "mean reference %bw.ht": 2.311, "r2 of subject means": 0.008, "trials": 7, "subjects": 3}{"mae %bw.ht": 2.305, "mean run %bw.ht": 4.564, "mean reference %bw.ht": 2.259, "r2 of subject means": 0.024, "trials": 25, "subjects": 5}
+early-stance external kam r                               {"mae %bw.ht": 1.017, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.492, "r2 of subject means": 0.022, "trials": 3, "subjects": 3}{"mae %bw.ht": 1.148, "mean run %bw.ht": 2.413, "mean reference %bw.ht": 3.561, "r2 of subject means": 0.246, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.017, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.492, "r2 of subject means": 0.022, "trials": 3, "subjects": 3}{"mae %bw.ht": 1.068, "mean run %bw.ht": 2.525, "mean reference %bw.ht": 3.594, "r2 of subject means": 0.138, "trials": 8, "subjects": 4}
+early-stance kam l                                        {"mae %bw.ht": 1.9, "mean run %bw.ht": 4.082, "mean reference %bw.ht": 2.241, "r2 of subject means": 0.0, "trials": 7, "subjects": 3}{"mae %bw.ht": 2.363, "mean run %bw.ht": 4.564, "mean reference %bw.ht": 2.201, "r2 of subject means": 0.011, "trials": 25, "subjects": 5}{"mae %bw.ht": 1.9, "mean run %bw.ht": 4.082, "mean reference %bw.ht": 2.241, "r2 of subject means": 0.0, "trials": 7, "subjects": 3}{"mae %bw.ht": 2.363, "mean run %bw.ht": 4.564, "mean reference %bw.ht": 2.201, "r2 of subject means": 0.011, "trials": 25, "subjects": 5}
+early-stance kam r                                        {"mae %bw.ht": 0.935, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.41, "r2 of subject means": 0.1, "trials": 3, "subjects": 3}{"mae %bw.ht": 1.054, "mean run %bw.ht": 2.413, "mean reference %bw.ht": 3.467, "r2 of subject means": 0.498, "trials": 9, "subjects": 4}{"mae %bw.ht": 0.935, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.41, "r2 of subject means": 0.1, "trials": 3, "subjects": 3}{"mae %bw.ht": 0.984, "mean run %bw.ht": 2.525, "mean reference %bw.ht": 3.51, "r2 of subject means": 0.382, "trials": 8, "subjects": 4}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.62 (0.50 to 0.69)         0.65 (0.47 to 0.75)         0.62 (0.50 to 0.69)         0.64 (0.46 to 0.74)         
+EMG r, mean over channels (range)                         0.08 (-0.04 to 0.24)        0.23 (-0.25 to 0.40)        0.08 (-0.04 to 0.24)        0.24 (-0.25 to 0.39)        
+EMG lag s, mean over channels (range)                     -0.001 (-0.137 to 0.118)    0.016 (-0.101 to 0.083)     -0.001 (-0.137 to 0.118)    0.016 (-0.113 to 0.087)     
+
+## training 2-5, all
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    308                         319                         307                         307                         
+subjects                                                  4                           4                           4                           4                           
+matched angle MAE deg                                     5.65 [5.06, 6.38]           5.62 [5.03, 6.38]           5.65 [5.06, 6.38]           5.65 [5.06, 6.38]           
+matched angle cMAE deg                                    3.56 [3.46, 3.67]           3.54 [3.42, 3.65]           3.56 [3.46, 3.66]           3.56 [3.46, 3.66]           
+GRF right vertical MAE %BW                                36.81 [35.27, 38.39]        17.94 [16.00, 19.86]        36.86 [35.36, 38.39]        17.96 [15.95, 19.96]        
+GRF right vertical RMSE %BW (mean)                        52.8                        29.1                        52.8                        29.3                        
+GRF right vertical r (mean over defined, n)               0.34 (277)                  0.70 (318)                  0.34 (276)                  0.71 (306)                  
+GRF right vertical r (median, never loaded = 0)           0.34                        0.79                        0.34                        0.79                        
+GRF left vertical MAE %BW                                 36.17 [35.22, 37.14]        17.04 [15.78, 17.93]        36.20 [35.29, 37.14]        17.07 [15.79, 17.92]        
+GRF left vertical RMSE %BW (mean)                         51.4                        27.7                        51.4                        27.8                        
+GRF left vertical r (mean over defined, n)                0.17 (206)                  0.70 (317)                  0.17 (206)                  0.69 (305)                  
+GRF left vertical r (median, never loaded = 0)            0.00                        0.77                        0.00                        0.76                        
+GRF both vertical MAE %BW                                 53.07 [48.55, 60.48]        16.15 [14.98, 17.46]        53.12 [48.55, 60.56]        16.27 [14.97, 17.73]        
+GRF both vertical RMSE %BW (mean)                         73.5                        29.3                        73.5                        29.8                        
+GRF both vertical r (mean over defined, n)                0.41 (289)                  0.75 (319)                  0.41 (288)                  0.75 (307)                  
+GRF both vertical r (median, never loaded = 0)            0.41                        0.83                        0.40                        0.83                        
+GRF both anterior-posterior MAE %BW                       6.36 [5.92, 6.78]           7.22 [6.76, 7.69]           6.35 [5.92, 6.78]           7.17 [6.66, 7.67]           
+GRF both medial-lateral MAE %BW                           3.08 [2.93, 3.31]           2.93 [2.64, 3.22]           3.09 [2.94, 3.32]           2.92 [2.63, 3.21]           
+forces right vertical r (median over defined)             0.39                        0.78                        0.38                        0.78                        
+forces right vertical RMSE %BW (median)                   52.0                        27.5                        52.0                        27.5                        
+forces left vertical r (median over defined)              0.20                        0.77                        0.20                        0.77                        
+forces left vertical RMSE %BW (median)                    49.0                        26.8                        48.9                        26.9                        
+GRF both 3-axis MAE %BW (mean)                            20.8                        8.8                         20.9                        8.8                         
+stance carried right                                      0.37                        0.82                        0.37                        0.81                        
+stance carried left                                       0.17                        0.78                        0.17                        0.78                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.009                       0.196                       0.009                       0.198                       
+KAM (walking) right peak error %bw.ht                     1.65 [1.23, 1.89]           1.61 [1.24, 1.98]           1.65 [1.23, 1.89]           1.61 [1.23, 2.02]           
+KAM (walking) right rmse %bw.ht                           1.92 [1.67, 2.07]           1.81 [1.72, 1.89]           1.92 [1.67, 2.07]           1.81 [1.72, 1.92]           
+KAM (walking) left peak error %bw.ht                      2.57 [2.15, 3.07]           1.81 [1.39, 2.31]           2.57 [2.15, 3.07]           1.79 [1.31, 2.39]           
+KAM (walking) left rmse %bw.ht                            2.43 [2.12, 2.79]           1.64 [1.47, 1.80]           2.43 [2.12, 2.79]           1.61 [1.44, 1.79]           
+joint moments, OpenCap's 15, MAE %BW*ht                   2.48 [2.25, 2.79]           2.42 [2.19, 2.74]           2.48 [2.25, 2.79]           2.45 [2.23, 2.76]           
+early-stance external kam l                               {"mae %bw.ht": 1.284, "mean run %bw.ht": 2.734, "mean reference %bw.ht": 1.894, "r2 of subject means": 0.144, "trials": 32, "subjects": 4}{"mae %bw.ht": 1.294, "mean run %bw.ht": 3.14, "mean reference %bw.ht": 1.95, "r2 of subject means": 0.624, "trials": 110, "subjects": 4}{"mae %bw.ht": 1.284, "mean run %bw.ht": 2.734, "mean reference %bw.ht": 1.894, "r2 of subject means": 0.144, "trials": 32, "subjects": 4}{"mae %bw.ht": 1.28, "mean run %bw.ht": 3.1, "mean reference %bw.ht": 1.932, "r2 of subject means": 0.67, "trials": 102, "subjects": 4}
+early-stance external kam r                               {"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}{"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}{"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}{"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}
+early-stance kam l                                        {"mae %bw.ht": 1.312, "mean run %bw.ht": 2.734, "mean reference %bw.ht": 1.841, "r2 of subject means": 0.122, "trials": 32, "subjects": 4}{"mae %bw.ht": 1.332, "mean run %bw.ht": 3.14, "mean reference %bw.ht": 1.902, "r2 of subject means": 0.671, "trials": 110, "subjects": 4}{"mae %bw.ht": 1.312, "mean run %bw.ht": 2.734, "mean reference %bw.ht": 1.841, "r2 of subject means": 0.122, "trials": 32, "subjects": 4}{"mae %bw.ht": 1.317, "mean run %bw.ht": 3.1, "mean reference %bw.ht": 1.884, "r2 of subject means": 0.717, "trials": 102, "subjects": 4}
+early-stance kam r                                        {"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}{"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}{"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}{"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.63 (0.53 to 0.69)         0.65 (0.50 to 0.73)         0.63 (0.53 to 0.69)         0.65 (0.50 to 0.73)         
+EMG r, mean over channels (range)                         0.13 (0.02 to 0.29)         0.22 (-0.05 to 0.39)        0.13 (0.02 to 0.29)         0.22 (-0.04 to 0.40)        
+EMG lag s, mean over channels (range)                     -0.010 (-0.095 to 0.127)    -0.031 (-0.152 to 0.081)    -0.010 (-0.095 to 0.126)    -0.032 (-0.152 to 0.084)    
+
+## activity drop jump
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    270                         268                         268                         268                         
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     6.03 [5.43, 6.67]           6.03 [5.43, 6.67]           6.03 [5.43, 6.67]           6.03 [5.43, 6.67]           
+matched angle cMAE deg                                    3.63 [3.29, 3.98]           3.63 [3.29, 3.97]           3.63 [3.29, 3.98]           3.63 [3.29, 3.97]           
+GRF right vertical MAE %BW                                24.57 [22.37, 26.71]        16.85 [15.45, 18.18]        24.59 [22.36, 26.73]        16.85 [15.45, 18.18]        
+GRF right vertical RMSE %BW (mean)                        48.7                        35.4                        48.8                        35.4                        
+GRF right vertical r (mean over defined, n)               0.55 (241)                  0.74 (267)                  0.55 (239)                  0.74 (267)                  
+GRF right vertical r (median, never loaded = 0)           0.55                        0.76                        0.55                        0.76                        
+GRF left vertical MAE %BW                                 22.24 [20.43, 23.89]        14.74 [13.21, 16.16]        22.23 [20.42, 23.89]        14.74 [13.21, 16.16]        
+GRF left vertical RMSE %BW (mean)                         44.1                        30.7                        44.1                        30.7                        
+GRF left vertical r (mean over defined, n)                0.50 (161)                  0.74 (266)                  0.50 (161)                  0.74 (266)                  
+GRF left vertical r (median, never loaded = 0)            0.25                        0.77                        0.26                        0.77                        
+GRF both vertical MAE %BW                                 32.21 [27.25, 37.37]        19.27 [16.95, 21.51]        32.17 [27.19, 37.37]        19.27 [16.95, 21.51]        
+GRF both vertical RMSE %BW (mean)                         70.3                        45.6                        70.1                        45.6                        
+GRF both vertical r (mean over defined, n)                0.67 (243)                  0.86 (268)                  0.67 (241)                  0.86 (268)                  
+GRF both vertical r (median, never loaded = 0)            0.69                        0.89                        0.69                        0.89                        
+GRF both anterior-posterior MAE %BW                       5.37 [5.06, 5.71]           5.61 [5.26, 5.92]           5.38 [5.06, 5.71]           5.61 [5.26, 5.92]           
+GRF both medial-lateral MAE %BW                           2.20 [1.94, 2.48]           2.54 [2.32, 2.75]           2.20 [1.95, 2.48]           2.54 [2.32, 2.75]           
+forces right vertical r (median over defined)             0.58                        0.78                        0.58                        0.78                        
+forces right vertical RMSE %BW (median)                   47.0                        32.6                        47.0                        32.6                        
+forces left vertical r (median over defined)              0.51                        0.78                        0.51                        0.78                        
+forces left vertical RMSE %BW (median)                    42.9                        28.8                        42.8                        28.8                        
+GRF both 3-axis MAE %BW (mean)                            13.3                        9.1                         13.2                        9.1                         
+stance carried right                                      0.38                        0.76                        0.38                        0.76                        
+stance carried left                                       0.23                        0.71                        0.23                        0.71                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.004                       0.166                       0.004                       0.166                       
+joint moments, OpenCap's 15, MAE %BW*ht                   3.73 [3.45, 4.10]           3.59 [3.30, 3.94]           3.73 [3.45, 4.10]           3.59 [3.30, 3.94]           
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.70 (0.60 to 0.76)         0.69 (0.48 to 0.80)         0.70 (0.60 to 0.76)         0.69 (0.48 to 0.80)         
+EMG r, mean over channels (range)                         0.20 (0.02 to 0.54)         0.22 (0.01 to 0.50)         0.20 (0.02 to 0.54)         0.22 (0.01 to 0.50)         
+EMG lag s, mean over channels (range)                     -0.007 (-0.086 to 0.099)    -0.077 (-0.181 to 0.003)    -0.008 (-0.085 to 0.098)    -0.077 (-0.181 to 0.003)    
+
+## activity sit-to-stand
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    84                          90                          84                          84                          
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     5.34 [4.75, 5.95]           5.39 [4.76, 6.07]           5.34 [4.75, 5.95]           5.34 [4.75, 5.95]           
+matched angle cMAE deg                                    2.91 [2.64, 3.17]           2.92 [2.64, 3.21]           2.91 [2.64, 3.17]           2.90 [2.63, 3.17]           
+GRF right vertical MAE %BW                                37.87 [36.35, 39.29]        16.68 [15.50, 18.21]        37.87 [36.35, 39.29]        16.51 [15.18, 18.15]        
+GRF right vertical RMSE %BW (mean)                        43.7                        21.6                        43.7                        21.4                        
+GRF right vertical r (mean over defined, n)               0.05 (83)                   0.65 (90)                   0.05 (83)                   0.66 (84)                   
+GRF right vertical r (median, never loaded = 0)           0.07                        0.71                        0.07                        0.72                        
+GRF left vertical MAE %BW                                 42.34 [40.36, 44.58]        16.56 [15.21, 17.96]        42.34 [40.36, 44.58]        16.51 [15.07, 17.98]        
+GRF left vertical RMSE %BW (mean)                         47.8                        21.5                        47.8                        21.3                        
+GRF left vertical r (mean over defined, n)                -0.05 (76)                  0.72 (90)                   -0.05 (76)                  0.72 (84)                   
+GRF left vertical r (median, never loaded = 0)            0.00                        0.83                        0.00                        0.83                        
+GRF both vertical MAE %BW                                 47.71 [42.35, 53.70]        11.58 [9.54, 13.83]         47.71 [42.35, 53.70]        11.60 [9.49, 13.96]         
+GRF both vertical RMSE %BW (mean)                         60.0                        15.4                        60.0                        15.5                        
+GRF both vertical r (mean over defined, n)                0.12 (84)                   0.93 (90)                   0.12 (84)                   0.93 (84)                   
+GRF both vertical r (median, never loaded = 0)            0.10                        0.96                        0.10                        0.96                        
+GRF both anterior-posterior MAE %BW                       4.74 [4.30, 5.28]           4.42 [3.73, 5.21]           4.74 [4.30, 5.28]           4.35 [3.70, 5.06]           
+GRF both medial-lateral MAE %BW                           3.51 [3.09, 3.97]           3.25 [2.94, 3.59]           3.51 [3.09, 3.97]           3.19 [2.89, 3.52]           
+forces right vertical r (median over defined)             0.07                        0.68                        0.07                        0.71                        
+forces right vertical RMSE %BW (median)                   44.3                        23.5                        44.3                        22.5                        
+forces left vertical r (median over defined)              -0.02                       0.80                        -0.02                       0.80                        
+forces left vertical RMSE %BW (median)                    47.8                        23.5                        47.8                        23.2                        
+GRF both 3-axis MAE %BW (mean)                            18.7                        6.4                         18.7                        6.4                         
+stance carried right                                      0.35                        0.82                        0.35                        0.82                        
+stance carried left                                       0.34                        0.82                        0.34                        0.82                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.014                       0.458                       0.014                       0.466                       
+joint moments, OpenCap's 15, MAE %BW*ht                   1.74 [1.68, 1.80]           1.55 [1.47, 1.62]           1.74 [1.68, 1.80]           1.54 [1.45, 1.61]           
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.65 (0.52 to 0.75)         0.69 (0.54 to 0.81)         0.65 (0.52 to 0.75)         0.69 (0.54 to 0.81)         
+EMG r, mean over channels (range)                         0.06 (-0.14 to 0.26)        0.20 (-0.21 to 0.58)        0.06 (-0.14 to 0.26)        0.20 (-0.21 to 0.58)        
+EMG lag s, mean over channels (range)                     -0.010 (-0.148 to 0.186)    -0.003 (-0.093 to 0.173)    -0.010 (-0.148 to 0.186)    -0.002 (-0.093 to 0.170)    
+
+## activity squats
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    85                          87                          85                          85                          
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     5.79 [5.16, 6.48]           5.79 [5.17, 6.47]           5.79 [5.16, 6.48]           5.79 [5.16, 6.48]           
+matched angle cMAE deg                                    3.28 [3.03, 3.60]           3.26 [3.00, 3.58]           3.28 [3.03, 3.60]           3.26 [3.01, 3.58]           
+GRF right vertical MAE %BW                                46.64 [42.35, 51.03]        16.85 [15.52, 18.28]        46.64 [42.35, 51.03]        16.80 [15.40, 18.27]        
+GRF right vertical RMSE %BW (mean)                        51.1                        20.3                        51.1                        20.2                        
+GRF right vertical r (mean over defined, n)               0.07 (82)                   0.41 (87)                   0.07 (82)                   0.43 (85)                   
+GRF right vertical r (median, never loaded = 0)           0.06                        0.57                        0.06                        0.60                        
+GRF left vertical MAE %BW                                 37.52 [33.99, 40.70]        15.92 [14.63, 17.34]        37.52 [33.99, 40.70]        15.89 [14.56, 17.33]        
+GRF left vertical RMSE %BW (mean)                         40.5                        19.2                        40.5                        19.1                        
+GRF left vertical r (mean over defined, n)                0.17 (68)                   0.39 (87)                   0.17 (68)                   0.38 (85)                   
+GRF left vertical r (median, never loaded = 0)            0.06                        0.51                        0.06                        0.51                        
+GRF both vertical MAE %BW                                 47.18 [33.49, 61.73]        6.32 [5.38, 7.19]           47.18 [33.49, 61.73]        6.33 [5.39, 7.18]           
+GRF both vertical RMSE %BW (mean)                         59.0                        8.0                         59.0                        8.0                         
+GRF both vertical r (mean over defined, n)                0.37 (82)                   0.89 (87)                   0.37 (82)                   0.88 (85)                   
+GRF both vertical r (median, never loaded = 0)            0.37                        0.90                        0.37                        0.90                        
+GRF both anterior-posterior MAE %BW                       2.56 [2.14, 2.96]           3.53 [3.19, 3.81]           2.56 [2.14, 2.96]           3.51 [3.17, 3.81]           
+GRF both medial-lateral MAE %BW                           4.17 [3.45, 5.01]           3.30 [2.92, 3.82]           4.17 [3.45, 5.01]           3.29 [2.89, 3.83]           
+forces right vertical r (median over defined)             0.08                        0.53                        0.08                        0.54                        
+forces right vertical RMSE %BW (median)                   50.2                        20.9                        50.2                        20.4                        
+forces left vertical r (median over defined)              0.14                        0.47                        0.14                        0.47                        
+forces left vertical RMSE %BW (median)                    44.5                        20.4                        44.5                        20.2                        
+GRF both 3-axis MAE %BW (mean)                            18.0                        4.4                         18.0                        4.4                         
+stance carried right                                      0.41                        0.99                        0.41                        0.99                        
+stance carried left                                       0.24                        0.95                        0.24                        0.95                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.033                       0.494                       0.033                       0.496                       
+joint moments, OpenCap's 15, MAE %BW*ht                   1.54 [1.50, 1.58]           1.58 [1.51, 1.65]           1.54 [1.50, 1.58]           1.57 [1.51, 1.64]           
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.59 (0.41 to 0.72)         0.61 (0.45 to 0.78)         0.59 (0.41 to 0.72)         0.61 (0.45 to 0.79)         
+EMG r, mean over channels (range)                         0.11 (-0.07 to 0.41)        0.17 (-0.22 to 0.71)        0.11 (-0.07 to 0.41)        0.17 (-0.22 to 0.72)        
+EMG lag s, mean over channels (range)                     -0.011 (-0.082 to 0.165)    -0.022 (-0.108 to 0.109)    -0.011 (-0.082 to 0.165)    -0.022 (-0.108 to 0.109)    
+
+## activity walking
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    129                         135                         129                         129                         
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     4.40 [3.93, 4.92]           4.38 [3.91, 4.91]           4.40 [3.93, 4.92]           4.41 [3.93, 4.93]           
+matched angle cMAE deg                                    2.93 [2.76, 3.11]           2.92 [2.74, 3.10]           2.93 [2.76, 3.11]           2.94 [2.77, 3.12]           
+GRF right vertical MAE %BW                                45.73 [42.03, 49.79]        20.33 [18.37, 22.29]        45.73 [42.03, 49.79]        20.51 [18.45, 22.59]        
+GRF right vertical RMSE %BW (mean)                        60.0                        28.5                        60.0                        28.7                        
+GRF right vertical r (mean over defined, n)               0.27 (117)                  0.78 (135)                  0.27 (117)                  0.78 (129)                  
+GRF right vertical r (median, never loaded = 0)           0.29                        0.85                        0.29                        0.84                        
+GRF left vertical MAE %BW                                 45.47 [43.63, 47.16]        21.32 [18.96, 23.63]        45.47 [43.63, 47.16]        21.53 [19.06, 23.88]        
+GRF left vertical RMSE %BW (mean)                         60.8                        31.2                        60.8                        31.4                        
+GRF left vertical r (mean over defined, n)                -0.01 (86)                  0.74 (129)                  -0.01 (86)                  0.74 (123)                  
+GRF left vertical r (median, never loaded = 0)            0.00                        0.81                        0.00                        0.80                        
+GRF both vertical MAE %BW                                 76.11 [74.10, 78.28]        19.55 [14.95, 24.98]        76.11 [74.10, 78.28]        19.79 [14.99, 25.43]        
+GRF both vertical RMSE %BW (mean)                         84.6                        24.3                        84.6                        24.5                        
+GRF both vertical r (mean over defined, n)                0.28 (121)                  0.56 (135)                  0.28 (121)                  0.56 (129)                  
+GRF both vertical r (median, never loaded = 0)            0.28                        0.67                        0.28                        0.67                        
+GRF both anterior-posterior MAE %BW                       9.65 [8.81, 10.43]          12.03 [10.83, 13.11]        9.65 [8.81, 10.43]          12.10 [10.89, 13.17]        
+GRF both medial-lateral MAE %BW                           3.35 [2.91, 3.79]           3.02 [2.72, 3.29]           3.35 [2.91, 3.79]           3.03 [2.72, 3.31]           
+forces right vertical r (median over defined)             0.34                        0.82                        0.34                        0.81                        
+forces right vertical RMSE %BW (median)                   61.3                        27.5                        61.3                        27.5                        
+forces left vertical r (median over defined)              -0.06                       0.80                        -0.06                       0.79                        
+forces left vertical RMSE %BW (median)                    64.3                        28.3                        64.3                        29.1                        
+GRF both 3-axis MAE %BW (mean)                            29.7                        11.5                        29.7                        11.6                        
+stance carried right                                      0.28                        0.82                        0.28                        0.82                        
+stance carried left                                       0.10                        0.75                        0.10                        0.75                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.004                       0.064                       0.004                       0.064                       
+KAM (walking) right peak error %bw.ht                     1.60 [1.29, 1.89]           1.98 [1.59, 2.32]           1.60 [1.29, 1.89]           1.99 [1.60, 2.35]           
+KAM (walking) right rmse %bw.ht                           1.88 [1.73, 1.99]           1.91 [1.75, 2.05]           1.88 [1.73, 1.99]           1.92 [1.76, 2.07]           
+KAM (walking) left peak error %bw.ht                      2.60 [2.26, 2.88]           1.86 [1.42, 2.31]           2.60 [2.26, 2.88]           1.86 [1.42, 2.34]           
+KAM (walking) left rmse %bw.ht                            2.49 [2.25, 2.71]           1.69 [1.46, 1.90]           2.49 [2.25, 2.71]           1.69 [1.46, 1.92]           
+joint moments, OpenCap's 15, MAE %BW*ht                   1.79 [1.67, 1.86]           1.88 [1.71, 2.02]           1.79 [1.67, 1.86]           1.89 [1.71, 2.02]           
+early-stance external kam l                               {"mae %bw.ht": 1.25, "mean run %bw.ht": 3.903, "mean reference %bw.ht": 2.937, "r2 of subject means": 0.49, "trials": 28, "subjects": 8}{"mae %bw.ht": 1.407, "mean run %bw.ht": 4.185, "mean reference %bw.ht": 2.92, "r2 of subject means": 0.236, "trials": 104, "subjects": 9}{"mae %bw.ht": 1.25, "mean run %bw.ht": 3.903, "mean reference %bw.ht": 2.937, "r2 of subject means": 0.49, "trials": 28, "subjects": 8}{"mae %bw.ht": 1.402, "mean run %bw.ht": 4.184, "mean reference %bw.ht": 2.931, "r2 of subject means": 0.232, "trials": 99, "subjects": 9}
+early-stance external kam r                               {"mae %bw.ht": 1.128, "mean run %bw.ht": 3.09, "mean reference %bw.ht": 3.614, "r2 of subject means": 0.004, "trials": 8, "subjects": 4}{"mae %bw.ht": 1.071, "mean run %bw.ht": 3.537, "mean reference %bw.ht": 3.602, "r2 of subject means": 0.129, "trials": 31, "subjects": 4}{"mae %bw.ht": 1.128, "mean run %bw.ht": 3.09, "mean reference %bw.ht": 3.614, "r2 of subject means": 0.004, "trials": 8, "subjects": 4}{"mae %bw.ht": 1.047, "mean run %bw.ht": 3.604, "mean reference %bw.ht": 3.612, "r2 of subject means": 0.101, "trials": 30, "subjects": 4}
+early-stance kam l                                        {"mae %bw.ht": 1.303, "mean run %bw.ht": 3.903, "mean reference %bw.ht": 2.871, "r2 of subject means": 0.422, "trials": 28, "subjects": 8}{"mae %bw.ht": 1.451, "mean run %bw.ht": 4.185, "mean reference %bw.ht": 2.86, "r2 of subject means": 0.147, "trials": 104, "subjects": 9}{"mae %bw.ht": 1.303, "mean run %bw.ht": 3.903, "mean reference %bw.ht": 2.871, "r2 of subject means": 0.422, "trials": 28, "subjects": 8}{"mae %bw.ht": 1.446, "mean run %bw.ht": 4.184, "mean reference %bw.ht": 2.871, "r2 of subject means": 0.144, "trials": 99, "subjects": 9}
+early-stance kam r                                        {"mae %bw.ht": 1.087, "mean run %bw.ht": 3.09, "mean reference %bw.ht": 3.512, "r2 of subject means": 0.047, "trials": 8, "subjects": 4}{"mae %bw.ht": 1.012, "mean run %bw.ht": 3.537, "mean reference %bw.ht": 3.492, "r2 of subject means": 0.311, "trials": 31, "subjects": 4}{"mae %bw.ht": 1.087, "mean run %bw.ht": 3.09, "mean reference %bw.ht": 3.512, "r2 of subject means": 0.047, "trials": 8, "subjects": 4}{"mae %bw.ht": 0.992, "mean run %bw.ht": 3.604, "mean reference %bw.ht": 3.505, "r2 of subject means": 0.268, "trials": 30, "subjects": 4}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.62 (0.45 to 0.73)         0.65 (0.46 to 0.76)         0.62 (0.45 to 0.73)         0.65 (0.46 to 0.76)         
+EMG r, mean over channels (range)                         0.08 (-0.15 to 0.25)        0.27 (-0.24 to 0.53)        0.08 (-0.15 to 0.25)        0.27 (-0.23 to 0.53)        
+EMG lag s, mean over channels (range)                     0.004 (-0.118 to 0.155)     0.022 (-0.145 to 0.130)     0.004 (-0.118 to 0.155)     0.023 (-0.144 to 0.129)     
+
+## activity walking (trunk sway)
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    132                         135                         132                         132                         
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     4.67 [4.26, 5.20]           4.67 [4.26, 5.19]           4.67 [4.26, 5.20]           4.68 [4.27, 5.21]           
+matched angle cMAE deg                                    3.05 [2.82, 3.32]           3.05 [2.81, 3.32]           3.05 [2.82, 3.32]           3.05 [2.82, 3.32]           
+GRF right vertical MAE %BW                                45.13 [40.23, 49.77]        18.43 [16.59, 20.54]        45.13 [40.23, 49.77]        18.40 [16.58, 20.58]        
+GRF right vertical RMSE %BW (mean)                        61.0                        26.5                        61.0                        26.4                        
+GRF right vertical r (mean over defined, n)               0.25 (95)                   0.80 (135)                  0.25 (95)                   0.80 (132)                  
+GRF right vertical r (median, never loaded = 0)           0.11                        0.84                        0.11                        0.84                        
+GRF left vertical MAE %BW                                 49.45 [46.62, 52.47]        19.10 [16.98, 21.41]        49.45 [46.62, 52.47]        19.14 [16.98, 21.49]        
+GRF left vertical RMSE %BW (mean)                         64.2                        27.9                        64.2                        28.0                        
+GRF left vertical r (mean over defined, n)                0.03 (91)                   0.79 (134)                  0.03 (91)                   0.78 (131)                  
+GRF left vertical r (median, never loaded = 0)            0.00                        0.85                        0.00                        0.85                        
+GRF both vertical MAE %BW                                 84.14 [78.30, 89.81]        16.31 [13.70, 19.18]        84.14 [78.30, 89.81]        16.42 [13.74, 19.35]        
+GRF both vertical RMSE %BW (mean)                         90.8                        21.2                        90.8                        21.4                        
+GRF both vertical r (mean over defined, n)                0.19 (117)                  0.50 (135)                  0.19 (117)                  0.49 (132)                  
+GRF both vertical r (median, never loaded = 0)            0.15                        0.52                        0.15                        0.52                        
+GRF both anterior-posterior MAE %BW                       9.11 [8.24, 9.99]           10.86 [10.02, 11.71]        9.11 [8.24, 9.99]           10.91 [10.07, 11.74]        
+GRF both medial-lateral MAE %BW                           4.21 [3.41, 4.98]           3.49 [3.08, 3.97]           4.21 [3.41, 4.98]           3.49 [3.06, 3.98]           
+forces right vertical r (median over defined)             0.36                        0.82                        0.36                        0.83                        
+forces right vertical RMSE %BW (median)                   62.4                        27.1                        62.4                        26.8                        
+forces left vertical r (median over defined)              -0.01                       0.84                        -0.01                       0.83                        
+forces left vertical RMSE %BW (median)                    69.4                        26.8                        69.4                        26.9                        
+GRF both 3-axis MAE %BW (mean)                            32.5                        10.2                        32.5                        10.3                        
+stance carried right                                      0.19                        0.83                        0.19                        0.83                        
+stance carried left                                       0.09                        0.85                        0.09                        0.85                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.004                       0.073                       0.004                       0.073                       
+KAM (walking) right peak error %bw.ht                     1.69 [1.38, 2.01]           1.78 [1.40, 2.20]           1.69 [1.38, 2.01]           1.79 [1.41, 2.20]           
+KAM (walking) right rmse %bw.ht                           1.81 [1.55, 2.06]           1.94 [1.72, 2.23]           1.81 [1.55, 2.06]           1.94 [1.71, 2.23]           
+KAM (walking) left peak error %bw.ht                      2.42 [2.00, 2.84]           1.65 [1.32, 2.01]           2.42 [2.00, 2.84]           1.63 [1.29, 2.01]           
+KAM (walking) left rmse %bw.ht                            2.31 [1.99, 2.63]           1.72 [1.50, 2.01]           2.31 [1.99, 2.63]           1.70 [1.49, 1.97]           
+joint moments, OpenCap's 15, MAE %BW*ht                   1.53 [1.47, 1.59]           1.72 [1.62, 1.80]           1.53 [1.47, 1.59]           1.72 [1.62, 1.80]           
+early-stance external kam l                               {"mae %bw.ht": 1.642, "mean run %bw.ht": 2.82, "mean reference %bw.ht": 1.503, "r2 of subject means": 0.0, "trials": 35, "subjects": 9}{"mae %bw.ht": 1.522, "mean run %bw.ht": 2.876, "mean reference %bw.ht": 1.457, "r2 of subject means": 0.124, "trials": 131, "subjects": 9}{"mae %bw.ht": 1.642, "mean run %bw.ht": 2.82, "mean reference %bw.ht": 1.503, "r2 of subject means": 0.0, "trials": 35, "subjects": 9}{"mae %bw.ht": 1.524, "mean run %bw.ht": 2.879, "mean reference %bw.ht": 1.461, "r2 of subject means": 0.117, "trials": 128, "subjects": 9}
+early-stance external kam r                               {"mae %bw.ht": 0.537, "mean run %bw.ht": 3.825, "mean reference %bw.ht": 3.288, "r2 of subject means": NaN, "trials": 1, "subjects": 1}{"mae %bw.ht": 1.429, "mean run %bw.ht": 3.096, "mean reference %bw.ht": 3.288, "r2 of subject means": NaN, "trials": 5, "subjects": 1}{"mae %bw.ht": 0.537, "mean run %bw.ht": 3.825, "mean reference %bw.ht": 3.288, "r2 of subject means": NaN, "trials": 1, "subjects": 1}{"mae %bw.ht": 1.429, "mean run %bw.ht": 3.096, "mean reference %bw.ht": 3.288, "r2 of subject means": NaN, "trials": 5, "subjects": 1}
+early-stance kam l                                        {"mae %bw.ht": 1.667, "mean run %bw.ht": 2.82, "mean reference %bw.ht": 1.464, "r2 of subject means": 0.004, "trials": 35, "subjects": 9}{"mae %bw.ht": 1.555, "mean run %bw.ht": 2.876, "mean reference %bw.ht": 1.409, "r2 of subject means": 0.152, "trials": 131, "subjects": 9}{"mae %bw.ht": 1.667, "mean run %bw.ht": 2.82, "mean reference %bw.ht": 1.464, "r2 of subject means": 0.004, "trials": 35, "subjects": 9}{"mae %bw.ht": 1.557, "mean run %bw.ht": 2.879, "mean reference %bw.ht": 1.413, "r2 of subject means": 0.141, "trials": 128, "subjects": 9}
+early-stance kam r                                        {"mae %bw.ht": 0.477, "mean run %bw.ht": 3.825, "mean reference %bw.ht": 3.348, "r2 of subject means": NaN, "trials": 1, "subjects": 1}{"mae %bw.ht": 1.441, "mean run %bw.ht": 3.096, "mean reference %bw.ht": 3.348, "r2 of subject means": NaN, "trials": 5, "subjects": 1}{"mae %bw.ht": 0.477, "mean run %bw.ht": 3.825, "mean reference %bw.ht": 3.348, "r2 of subject means": NaN, "trials": 1, "subjects": 1}{"mae %bw.ht": 1.441, "mean run %bw.ht": 3.096, "mean reference %bw.ht": 3.348, "r2 of subject means": NaN, "trials": 5, "subjects": 1}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.58 (0.45 to 0.67)         0.63 (0.43 to 0.75)         0.58 (0.45 to 0.67)         0.63 (0.43 to 0.75)         
+EMG r, mean over channels (range)                         0.04 (-0.13 to 0.18)        0.27 (-0.23 to 0.50)        0.04 (-0.13 to 0.18)        0.27 (-0.23 to 0.50)        
+EMG lag s, mean over channels (range)                     -0.008 (-0.149 to 0.143)    0.007 (-0.151 to 0.096)     -0.008 (-0.149 to 0.143)    0.008 (-0.151 to 0.092)     
+
+## camera Cam0
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    144                         144                         144                         144                         
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     5.20 [4.76, 5.67]           5.21 [4.76, 5.68]           5.20 [4.76, 5.67]           5.21 [4.76, 5.68]           
+matched angle cMAE deg                                    3.14 [2.96, 3.32]           3.14 [2.96, 3.32]           3.14 [2.96, 3.32]           3.14 [2.96, 3.32]           
+GRF right vertical MAE %BW                                35.40 [33.45, 37.67]        17.67 [15.96, 19.66]        35.40 [33.45, 37.67]        17.67 [15.96, 19.66]        
+GRF right vertical RMSE %BW (mean)                        52.3                        29.0                        52.3                        29.0                        
+GRF right vertical r (mean over defined, n)               0.27 (130)                  0.68 (144)                  0.27 (130)                  0.68 (144)                  
+GRF right vertical r (median, never loaded = 0)           0.32                        0.75                        0.32                        0.75                        
+GRF left vertical MAE %BW                                 37.44 [36.08, 38.82]        16.54 [15.09, 18.18]        37.44 [36.08, 38.82]        16.54 [15.09, 18.18]        
+GRF left vertical RMSE %BW (mean)                         52.1                        26.6                        52.1                        26.6                        
+GRF left vertical r (mean over defined, n)                0.17 (111)                  0.75 (141)                  0.17 (111)                  0.75 (141)                  
+GRF left vertical r (median, never loaded = 0)            0.00                        0.82                        0.00                        0.82                        
+GRF both vertical MAE %BW                                 54.10 [50.10, 58.78]        14.95 [12.67, 17.75]        54.10 [50.10, 58.78]        14.95 [12.67, 17.75]        
+GRF both vertical RMSE %BW (mean)                         74.6                        27.3                        74.6                        27.3                        
+GRF both vertical r (mean over defined, n)                0.40 (139)                  0.75 (144)                  0.40 (139)                  0.75 (144)                  
+GRF both vertical r (median, never loaded = 0)            0.42                        0.84                        0.42                        0.84                        
+GRF both anterior-posterior MAE %BW                       6.34 [5.88, 6.89]           7.24 [6.87, 7.59]           6.34 [5.88, 6.89]           7.24 [6.87, 7.59]           
+GRF both medial-lateral MAE %BW                           3.22 [3.06, 3.39]           3.08 [2.82, 3.29]           3.22 [3.06, 3.39]           3.08 [2.82, 3.29]           
+forces right vertical r (median over defined)             0.38                        0.75                        0.38                        0.75                        
+forces right vertical RMSE %BW (median)                   52.4                        26.7                        52.4                        26.7                        
+forces left vertical r (median over defined)              0.17                        0.83                        0.17                        0.83                        
+forces left vertical RMSE %BW (median)                    49.2                        25.3                        49.2                        25.3                        
+GRF both 3-axis MAE %BW (mean)                            21.2                        8.4                         21.2                        8.4                         
+stance carried right                                      0.30                        0.82                        0.30                        0.82                        
+stance carried left                                       0.22                        0.81                        0.22                        0.81                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.012                       0.207                       0.012                       0.207                       
+KAM (walking) right peak error %bw.ht                     1.17 [0.91, 1.44]           1.65 [1.27, 2.02]           1.17 [0.91, 1.44]           1.65 [1.27, 2.02]           
+KAM (walking) right rmse %bw.ht                           1.53 [1.26, 1.82]           1.79 [1.51, 2.07]           1.53 [1.26, 1.82]           1.79 [1.51, 2.07]           
+KAM (walking) left peak error %bw.ht                      2.88 [2.12, 3.58]           2.14 [1.56, 2.76]           2.88 [2.12, 3.58]           2.14 [1.56, 2.76]           
+KAM (walking) left rmse %bw.ht                            2.70 [2.07, 3.27]           1.90 [1.70, 2.13]           2.70 [2.07, 3.27]           1.90 [1.70, 2.13]           
+joint moments, OpenCap's 15, MAE %BW*ht                   2.44 [2.32, 2.59]           2.44 [2.31, 2.60]           2.44 [2.32, 2.59]           2.44 [2.31, 2.60]           
+early-stance external kam l                               {"mae %bw.ht": 2.003, "mean run %bw.ht": 4.635, "mean reference %bw.ht": 2.632, "r2 of subject means": 0.002, "trials": 12, "subjects": 6}{"mae %bw.ht": 2.143, "mean run %bw.ht": 4.238, "mean reference %bw.ht": 2.098, "r2 of subject means": 0.268, "trials": 48, "subjects": 9}{"mae %bw.ht": 2.003, "mean run %bw.ht": 4.635, "mean reference %bw.ht": 2.632, "r2 of subject means": 0.002, "trials": 12, "subjects": 6}{"mae %bw.ht": 2.143, "mean run %bw.ht": 4.238, "mean reference %bw.ht": 2.098, "r2 of subject means": 0.268, "trials": 48, "subjects": 9}
+early-stance external kam r                               {"mae %bw.ht": 0.316, "mean run %bw.ht": 3.846, "mean reference %bw.ht": 3.624, "r2 of subject means": NaN, "trials": 2, "subjects": 1}{"mae %bw.ht": 0.755, "mean run %bw.ht": 2.785, "mean reference %bw.ht": 3.54, "r2 of subject means": 0.475, "trials": 5, "subjects": 3}{"mae %bw.ht": 0.316, "mean run %bw.ht": 3.846, "mean reference %bw.ht": 3.624, "r2 of subject means": NaN, "trials": 2, "subjects": 1}{"mae %bw.ht": 0.755, "mean run %bw.ht": 2.785, "mean reference %bw.ht": 3.54, "r2 of subject means": 0.475, "trials": 5, "subjects": 3}
+early-stance kam l                                        {"mae %bw.ht": 2.065, "mean run %bw.ht": 4.635, "mean reference %bw.ht": 2.571, "r2 of subject means": 0.006, "trials": 12, "subjects": 6}{"mae %bw.ht": 2.192, "mean run %bw.ht": 4.238, "mean reference %bw.ht": 2.045, "r2 of subject means": 0.279, "trials": 48, "subjects": 9}{"mae %bw.ht": 2.065, "mean run %bw.ht": 4.635, "mean reference %bw.ht": 2.571, "r2 of subject means": 0.006, "trials": 12, "subjects": 6}{"mae %bw.ht": 2.192, "mean run %bw.ht": 4.238, "mean reference %bw.ht": 2.045, "r2 of subject means": 0.279, "trials": 48, "subjects": 9}
+early-stance kam r                                        {"mae %bw.ht": 0.282, "mean run %bw.ht": 3.846, "mean reference %bw.ht": 3.564, "r2 of subject means": NaN, "trials": 2, "subjects": 1}{"mae %bw.ht": 0.65, "mean run %bw.ht": 2.785, "mean reference %bw.ht": 3.435, "r2 of subject means": 0.61, "trials": 5, "subjects": 3}{"mae %bw.ht": 0.282, "mean run %bw.ht": 3.846, "mean reference %bw.ht": 3.564, "r2 of subject means": NaN, "trials": 2, "subjects": 1}{"mae %bw.ht": 0.65, "mean run %bw.ht": 2.785, "mean reference %bw.ht": 3.435, "r2 of subject means": 0.61, "trials": 5, "subjects": 3}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.64 (0.52 to 0.71)         0.66 (0.50 to 0.76)         0.64 (0.52 to 0.71)         0.66 (0.50 to 0.76)         
+EMG r, mean over channels (range)                         0.12 (0.05 to 0.22)         0.23 (-0.10 to 0.44)        0.12 (0.05 to 0.22)         0.23 (-0.10 to 0.44)        
+EMG lag s, mean over channels (range)                     -0.006 (-0.089 to 0.131)    -0.037 (-0.158 to 0.052)    -0.006 (-0.089 to 0.131)    -0.037 (-0.158 to 0.052)    
+
+## camera Cam1
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    126                         141                         124                         124                         
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     5.72 [5.26, 6.25]           5.62 [5.17, 6.12]           5.72 [5.25, 6.26]           5.72 [5.25, 6.26]           
+matched angle cMAE deg                                    3.40 [3.16, 3.65]           3.33 [3.12, 3.55]           3.39 [3.15, 3.65]           3.39 [3.15, 3.65]           
+GRF right vertical MAE %BW                                37.34 [34.06, 40.90]        18.72 [17.87, 19.65]        37.58 [34.30, 41.09]        18.79 [17.79, 19.94]        
+GRF right vertical RMSE %BW (mean)                        54.5                        30.3                        54.6                        31.1                        
+GRF right vertical r (mean over defined, n)               0.23 (110)                  0.61 (140)                  0.22 (108)                  0.62 (123)                  
+GRF right vertical r (median, never loaded = 0)           0.25                        0.73                        0.25                        0.72                        
+GRF left vertical MAE %BW                                 35.09 [33.64, 36.51]        17.88 [17.22, 18.52]        35.28 [33.71, 36.82]        18.00 [17.35, 18.60]        
+GRF left vertical RMSE %BW (mean)                         51.0                        29.1                        51.0                        29.8                        
+GRF left vertical r (mean over defined, n)                0.15 (87)                   0.73 (141)                  0.15 (87)                   0.73 (124)                  
+GRF left vertical r (median, never loaded = 0)            0.00                        0.81                        0.00                        0.81                        
+GRF both vertical MAE %BW                                 53.27 [51.08, 55.43]        15.50 [14.36, 16.67]        53.51 [51.17, 55.87]        16.01 [14.60, 17.33]        
+GRF both vertical RMSE %BW (mean)                         77.2                        27.9                        77.1                        29.6                        
+GRF both vertical r (mean over defined, n)                0.35 (113)                  0.76 (141)                  0.35 (111)                  0.77 (124)                  
+GRF both vertical r (median, never loaded = 0)            0.29                        0.83                        0.27                        0.83                        
+GRF both anterior-posterior MAE %BW                       6.70 [6.36, 7.02]           7.41 [7.07, 7.74]           6.73 [6.40, 7.03]           7.37 [6.87, 7.80]           
+GRF both medial-lateral MAE %BW                           3.21 [3.00, 3.41]           3.21 [2.92, 3.50]           3.24 [3.03, 3.45]           3.17 [2.85, 3.46]           
+forces right vertical r (median over defined)             0.30                        0.73                        0.30                        0.72                        
+forces right vertical RMSE %BW (median)                   54.0                        28.7                        54.0                        29.4                        
+forces left vertical r (median over defined)              0.12                        0.81                        0.12                        0.80                        
+forces left vertical RMSE %BW (median)                    48.6                        27.6                        48.6                        28.0                        
+GRF both 3-axis MAE %BW (mean)                            21.1                        8.7                         21.2                        8.9                         
+stance carried right                                      0.29                        0.80                        0.29                        0.79                        
+stance carried left                                       0.18                        0.80                        0.18                        0.80                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.006                       0.177                       0.006                       0.174                       
+KAM (walking) right peak error %bw.ht                     1.49 [1.18, 1.79]           1.44 [1.19, 1.70]           1.49 [1.18, 1.79]           1.42 [1.12, 1.72]           
+KAM (walking) right rmse %bw.ht                           1.80 [1.53, 2.03]           1.72 [1.52, 1.93]           1.80 [1.53, 2.03]           1.69 [1.47, 1.94]           
+KAM (walking) left peak error %bw.ht                      2.85 [2.29, 3.44]           2.08 [1.72, 2.52]           2.85 [2.29, 3.44]           2.10 [1.60, 2.60]           
+KAM (walking) left rmse %bw.ht                            2.65 [2.20, 3.16]           1.91 [1.74, 2.10]           2.65 [2.20, 3.16]           1.89 [1.61, 2.14]           
+joint moments, OpenCap's 15, MAE %BW*ht                   2.65 [2.54, 2.79]           2.54 [2.41, 2.69]           2.63 [2.52, 2.78]           2.65 [2.51, 2.81]           
+early-stance external kam l                               {"mae %bw.ht": 1.838, "mean run %bw.ht": 3.959, "mean reference %bw.ht": 2.158, "r2 of subject means": 0.146, "trials": 13, "subjects": 6}{"mae %bw.ht": 2.057, "mean run %bw.ht": 4.169, "mean reference %bw.ht": 2.112, "r2 of subject means": 0.084, "trials": 48, "subjects": 9}{"mae %bw.ht": 1.838, "mean run %bw.ht": 3.959, "mean reference %bw.ht": 2.158, "r2 of subject means": 0.146, "trials": 13, "subjects": 6}{"mae %bw.ht": 2.174, "mean run %bw.ht": 4.273, "mean reference %bw.ht": 2.099, "r2 of subject means": 0.047, "trials": 40, "subjects": 9}
+early-stance external kam r                               {"mae %bw.ht": 1.017, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.492, "r2 of subject means": 0.022, "trials": 3, "subjects": 3}{"mae %bw.ht": 1.148, "mean run %bw.ht": 2.413, "mean reference %bw.ht": 3.561, "r2 of subject means": 0.246, "trials": 9, "subjects": 4}{"mae %bw.ht": 1.017, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.492, "r2 of subject means": 0.022, "trials": 3, "subjects": 3}{"mae %bw.ht": 1.068, "mean run %bw.ht": 2.525, "mean reference %bw.ht": 3.594, "r2 of subject means": 0.138, "trials": 8, "subjects": 4}
+early-stance kam l                                        {"mae %bw.ht": 1.897, "mean run %bw.ht": 3.959, "mean reference %bw.ht": 2.094, "r2 of subject means": 0.161, "trials": 13, "subjects": 6}{"mae %bw.ht": 2.11, "mean run %bw.ht": 4.169, "mean reference %bw.ht": 2.059, "r2 of subject means": 0.064, "trials": 48, "subjects": 9}{"mae %bw.ht": 1.897, "mean run %bw.ht": 3.959, "mean reference %bw.ht": 2.094, "r2 of subject means": 0.161, "trials": 13, "subjects": 6}{"mae %bw.ht": 2.228, "mean run %bw.ht": 4.273, "mean reference %bw.ht": 2.045, "r2 of subject means": 0.035, "trials": 40, "subjects": 9}
+early-stance kam r                                        {"mae %bw.ht": 0.935, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.41, "r2 of subject means": 0.1, "trials": 3, "subjects": 3}{"mae %bw.ht": 1.054, "mean run %bw.ht": 2.413, "mean reference %bw.ht": 3.467, "r2 of subject means": 0.498, "trials": 9, "subjects": 4}{"mae %bw.ht": 0.935, "mean run %bw.ht": 2.475, "mean reference %bw.ht": 3.41, "r2 of subject means": 0.1, "trials": 3, "subjects": 3}{"mae %bw.ht": 0.984, "mean run %bw.ht": 2.525, "mean reference %bw.ht": 3.51, "r2 of subject means": 0.382, "trials": 8, "subjects": 4}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.64 (0.53 to 0.70)         0.65 (0.51 to 0.73)         0.64 (0.53 to 0.70)         0.65 (0.51 to 0.74)         
+EMG r, mean over channels (range)                         0.12 (0.02 to 0.33)         0.22 (-0.11 to 0.38)        0.12 (0.02 to 0.32)         0.22 (-0.09 to 0.38)        
+EMG lag s, mean over channels (range)                     0.009 (-0.094 to 0.113)     -0.022 (-0.135 to 0.074)    0.009 (-0.091 to 0.112)     -0.025 (-0.138 to 0.067)    
+
+## camera Cam2
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    144                         144                         144                         144                         
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     5.36 [4.86, 5.87]           5.36 [4.86, 5.87]           5.36 [4.86, 5.87]           5.36 [4.86, 5.87]           
+matched angle cMAE deg                                    3.53 [3.26, 3.81]           3.53 [3.27, 3.81]           3.53 [3.26, 3.81]           3.53 [3.27, 3.81]           
+GRF right vertical MAE %BW                                36.73 [33.41, 39.90]        15.45 [13.93, 17.04]        36.73 [33.41, 39.90]        15.45 [13.93, 17.04]        
+GRF right vertical RMSE %BW (mean)                        52.2                        25.3                        52.2                        25.3                        
+GRF right vertical r (mean over defined, n)               0.30 (131)                  0.76 (144)                  0.30 (131)                  0.76 (144)                  
+GRF right vertical r (median, never loaded = 0)           0.33                        0.81                        0.33                        0.81                        
+GRF left vertical MAE %BW                                 35.19 [33.14, 37.33]        14.42 [13.02, 15.80]        35.19 [33.14, 37.33]        14.42 [13.02, 15.80]        
+GRF left vertical RMSE %BW (mean)                         50.4                        24.3                        50.4                        24.3                        
+GRF left vertical r (mean over defined, n)                0.29 (88)                   0.76 (143)                  0.29 (88)                   0.76 (143)                  
+GRF left vertical r (median, never loaded = 0)            0.00                        0.82                        0.00                        0.82                        
+GRF both vertical MAE %BW                                 52.72 [48.18, 57.05]        15.54 [13.47, 17.95]        52.72 [48.18, 57.05]        15.54 [13.47, 17.95]        
+GRF both vertical RMSE %BW (mean)                         71.8                        27.7                        71.8                        27.7                        
+GRF both vertical r (mean over defined, n)                0.39 (135)                  0.73 (144)                  0.39 (135)                  0.73 (144)                  
+GRF both vertical r (median, never loaded = 0)            0.35                        0.84                        0.35                        0.84                        
+GRF both anterior-posterior MAE %BW                       6.60 [6.38, 6.81]           7.48 [7.02, 7.90]           6.60 [6.38, 6.81]           7.48 [7.02, 7.90]           
+GRF both medial-lateral MAE %BW                           3.10 [2.88, 3.33]           2.19 [2.01, 2.35]           3.10 [2.88, 3.33]           2.19 [2.01, 2.35]           
+forces right vertical r (median over defined)             0.38                        0.81                        0.38                        0.81                        
+forces right vertical RMSE %BW (median)                   49.6                        21.4                        49.6                        21.4                        
+forces left vertical r (median over defined)              0.22                        0.82                        0.22                        0.82                        
+forces left vertical RMSE %BW (median)                    48.3                        22.5                        48.3                        22.5                        
+GRF both 3-axis MAE %BW (mean)                            20.8                        8.4                         20.8                        8.4                         
+stance carried right                                      0.34                        0.85                        0.34                        0.85                        
+stance carried left                                       0.25                        0.82                        0.25                        0.82                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.009                       0.244                       0.009                       0.244                       
+KAM (walking) right peak error %bw.ht                     1.66 [1.28, 2.19]           1.80 [1.34, 2.36]           1.66 [1.28, 2.19]           1.80 [1.34, 2.36]           
+KAM (walking) right rmse %bw.ht                           1.83 [1.58, 2.10]           1.86 [1.66, 2.08]           1.83 [1.58, 2.10]           1.86 [1.66, 2.08]           
+KAM (walking) left peak error %bw.ht                      2.23 [1.29, 3.31]           1.95 [1.58, 2.39]           2.23 [1.29, 3.31]           1.95 [1.58, 2.39]           
+KAM (walking) left rmse %bw.ht                            2.34 [1.64, 3.14]           1.64 [1.50, 1.81]           2.34 [1.64, 3.14]           1.64 [1.50, 1.81]           
+joint moments, OpenCap's 15, MAE %BW*ht                   2.31 [2.19, 2.45]           2.21 [2.07, 2.37]           2.31 [2.19, 2.45]           2.21 [2.07, 2.37]           
+early-stance external kam l                               {"mae %bw.ht": 1.325, "mean run %bw.ht": 2.891, "mean reference %bw.ht": 1.865, "r2 of subject means": 0.964, "trials": 7, "subjects": 4}{"mae %bw.ht": 1.31, "mean run %bw.ht": 3.368, "mean reference %bw.ht": 2.104, "r2 of subject means": 0.307, "trials": 47, "subjects": 9}{"mae %bw.ht": 1.325, "mean run %bw.ht": 2.891, "mean reference %bw.ht": 1.865, "r2 of subject means": 0.964, "trials": 7, "subjects": 4}{"mae %bw.ht": 1.31, "mean run %bw.ht": 3.368, "mean reference %bw.ht": 2.104, "r2 of subject means": 0.307, "trials": 47, "subjects": 9}
+early-stance external kam r                               {"mae %bw.ht": 1.731, "mean run %bw.ht": 1.845, "mean reference %bw.ht": 3.577, "r2 of subject means": NaN, "trials": 2, "subjects": 2}{"mae %bw.ht": 1.063, "mean run %bw.ht": 2.844, "mean reference %bw.ht": 3.57, "r2 of subject means": 0.002, "trials": 7, "subjects": 4}{"mae %bw.ht": 1.731, "mean run %bw.ht": 1.845, "mean reference %bw.ht": 3.577, "r2 of subject means": NaN, "trials": 2, "subjects": 2}{"mae %bw.ht": 1.063, "mean run %bw.ht": 2.844, "mean reference %bw.ht": 3.57, "r2 of subject means": 0.002, "trials": 7, "subjects": 4}
+early-stance kam l                                        {"mae %bw.ht": 1.367, "mean run %bw.ht": 2.891, "mean reference %bw.ht": 1.815, "r2 of subject means": 0.918, "trials": 7, "subjects": 4}{"mae %bw.ht": 1.356, "mean run %bw.ht": 3.368, "mean reference %bw.ht": 2.053, "r2 of subject means": 0.356, "trials": 47, "subjects": 9}{"mae %bw.ht": 1.367, "mean run %bw.ht": 2.891, "mean reference %bw.ht": 1.815, "r2 of subject means": 0.918, "trials": 7, "subjects": 4}{"mae %bw.ht": 1.356, "mean run %bw.ht": 3.368, "mean reference %bw.ht": 2.053, "r2 of subject means": 0.356, "trials": 47, "subjects": 9}
+early-stance kam r                                        {"mae %bw.ht": 1.617, "mean run %bw.ht": 1.845, "mean reference %bw.ht": 3.462, "r2 of subject means": NaN, "trials": 2, "subjects": 2}{"mae %bw.ht": 0.983, "mean run %bw.ht": 2.844, "mean reference %bw.ht": 3.5, "r2 of subject means": 0.052, "trials": 7, "subjects": 4}{"mae %bw.ht": 1.617, "mean run %bw.ht": 1.845, "mean reference %bw.ht": 3.462, "r2 of subject means": NaN, "trials": 2, "subjects": 2}{"mae %bw.ht": 0.983, "mean run %bw.ht": 2.844, "mean reference %bw.ht": 3.5, "r2 of subject means": 0.052, "trials": 7, "subjects": 4}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.64 (0.56 to 0.70)         0.67 (0.53 to 0.75)         0.64 (0.56 to 0.70)         0.67 (0.53 to 0.75)         
+EMG r, mean over channels (range)                         0.12 (0.01 to 0.27)         0.25 (-0.07 to 0.46)        0.12 (0.01 to 0.27)         0.25 (-0.07 to 0.46)        
+EMG lag s, mean over channels (range)                     0.007 (-0.045 to 0.121)     -0.009 (-0.132 to 0.071)    0.007 (-0.045 to 0.121)     -0.009 (-0.132 to 0.071)    
+
+## camera Cam3
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    143                         143                         143                         143                         
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     5.35 [4.90, 5.82]           5.35 [4.90, 5.82]           5.35 [4.90, 5.82]           5.35 [4.90, 5.82]           
+matched angle cMAE deg                                    3.21 [3.00, 3.40]           3.20 [3.00, 3.39]           3.21 [3.00, 3.40]           3.20 [3.00, 3.39]           
+GRF right vertical MAE %BW                                37.34 [34.90, 39.90]        18.31 [17.31, 19.21]        37.34 [34.90, 39.90]        18.31 [17.31, 19.21]        
+GRF right vertical RMSE %BW (mean)                        52.9                        29.6                        52.9                        29.6                        
+GRF right vertical r (mean over defined, n)               0.35 (127)                  0.76 (143)                  0.35 (127)                  0.76 (143)                  
+GRF right vertical r (median, never loaded = 0)           0.34                        0.80                        0.34                        0.80                        
+GRF left vertical MAE %BW                                 35.09 [34.11, 36.17]        17.85 [16.35, 19.29]        35.09 [34.11, 36.17]        17.85 [16.35, 19.29]        
+GRF left vertical RMSE %BW (mean)                         50.0                        28.9                        50.0                        28.9                        
+GRF left vertical r (mean over defined, n)                0.19 (117)                  0.63 (143)                  0.19 (117)                  0.63 (143)                  
+GRF left vertical r (median, never loaded = 0)            0.09                        0.71                        0.09                        0.71                        
+GRF both vertical MAE %BW                                 53.03 [48.11, 58.06]        15.96 [14.39, 17.41]        53.03 [48.11, 58.06]        15.96 [14.39, 17.41]        
+GRF both vertical RMSE %BW (mean)                         73.2                        29.1                        73.2                        29.1                        
+GRF both vertical r (mean over defined, n)                0.41 (132)                  0.75 (143)                  0.41 (132)                  0.75 (143)                  
+GRF both vertical r (median, never loaded = 0)            0.35                        0.83                        0.35                        0.83                        
+GRF both anterior-posterior MAE %BW                       6.68 [6.41, 6.95]           7.72 [7.35, 8.07]           6.68 [6.41, 6.95]           7.72 [7.35, 8.07]           
+GRF both medial-lateral MAE %BW                           3.22 [3.07, 3.41]           3.33 [3.04, 3.62]           3.22 [3.07, 3.41]           3.33 [3.04, 3.62]           
+forces right vertical r (median over defined)             0.38                        0.81                        0.38                        0.81                        
+forces right vertical RMSE %BW (median)                   50.5                        28.5                        50.5                        28.5                        
+forces left vertical r (median over defined)              0.21                        0.70                        0.21                        0.70                        
+forces left vertical RMSE %BW (median)                    48.5                        27.7                        48.5                        27.7                        
+GRF both 3-axis MAE %BW (mean)                            21.0                        9.0                         21.0                        9.0                         
+stance carried right                                      0.34                        0.82                        0.34                        0.82                        
+stance carried left                                       0.22                        0.77                        0.22                        0.77                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.012                       0.198                       0.012                       0.198                       
+KAM (walking) right peak error %bw.ht                     1.92 [1.40, 2.42]           2.08 [1.74, 2.36]           1.92 [1.40, 2.42]           2.08 [1.74, 2.36]           
+KAM (walking) right rmse %bw.ht                           2.12 [1.78, 2.45]           1.96 [1.79, 2.14]           2.12 [1.78, 2.45]           1.96 [1.79, 2.14]           
+KAM (walking) left peak error %bw.ht                      2.34 [1.64, 3.07]           1.22 [0.82, 1.74]           2.34 [1.64, 3.07]           1.22 [0.82, 1.74]           
+KAM (walking) left rmse %bw.ht                            2.28 [1.66, 2.98]           1.51 [1.28, 1.73]           2.28 [1.66, 2.98]           1.51 [1.28, 1.73]           
+joint moments, OpenCap's 15, MAE %BW*ht                   2.44 [2.29, 2.61]           2.44 [2.31, 2.60]           2.44 [2.29, 2.61]           2.44 [2.31, 2.60]           
+early-stance external kam l                               {"mae %bw.ht": 0.84, "mean run %bw.ht": 1.757, "mean reference %bw.ht": 1.885, "r2 of subject means": 0.037, "trials": 14, "subjects": 7}{"mae %bw.ht": 0.71, "mean run %bw.ht": 2.345, "mean reference %bw.ht": 2.112, "r2 of subject means": 0.175, "trials": 49, "subjects": 9}{"mae %bw.ht": 0.84, "mean run %bw.ht": 1.757, "mean reference %bw.ht": 1.885, "r2 of subject means": 0.037, "trials": 14, "subjects": 7}{"mae %bw.ht": 0.71, "mean run %bw.ht": 2.345, "mean reference %bw.ht": 2.112, "r2 of subject means": 0.175, "trials": 49, "subjects": 9}
+early-stance external kam r                               {"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}{"mae %bw.ht": 1.068, "mean run %bw.ht": 4.298, "mean reference %bw.ht": 3.542, "r2 of subject means": 0.09, "trials": 8, "subjects": 4}{"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}{"mae %bw.ht": 1.068, "mean run %bw.ht": 4.298, "mean reference %bw.ht": 3.542, "r2 of subject means": 0.09, "trials": 8, "subjects": 4}
+early-stance kam l                                        {"mae %bw.ht": 0.833, "mean run %bw.ht": 1.757, "mean reference %bw.ht": 1.853, "r2 of subject means": 0.045, "trials": 14, "subjects": 7}{"mae %bw.ht": 0.706, "mean run %bw.ht": 2.345, "mean reference %bw.ht": 2.057, "r2 of subject means": 0.204, "trials": 49, "subjects": 9}{"mae %bw.ht": 0.833, "mean run %bw.ht": 1.757, "mean reference %bw.ht": 1.853, "r2 of subject means": 0.045, "trials": 14, "subjects": 7}{"mae %bw.ht": 0.706, "mean run %bw.ht": 2.345, "mean reference %bw.ht": 2.057, "r2 of subject means": 0.204, "trials": 49, "subjects": 9}
+early-stance kam r                                        {"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}{"mae %bw.ht": 1.034, "mean run %bw.ht": 4.298, "mean reference %bw.ht": 3.454, "r2 of subject means": 0.295, "trials": 8, "subjects": 4}{"mae %bw.ht": NaN, "r2 of subject means": NaN, "trials": 0, "subjects": 0}{"mae %bw.ht": 1.034, "mean run %bw.ht": 4.298, "mean reference %bw.ht": 3.454, "r2 of subject means": 0.295, "trials": 8, "subjects": 4}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.64 (0.54 to 0.71)         0.66 (0.51 to 0.75)         0.64 (0.54 to 0.71)         0.66 (0.51 to 0.75)         
+EMG r, mean over channels (range)                         0.12 (0.01 to 0.23)         0.23 (-0.04 to 0.40)        0.12 (0.01 to 0.23)         0.23 (-0.04 to 0.40)        
+EMG lag s, mean over channels (range)                     -0.017 (-0.091 to 0.110)    -0.022 (-0.138 to 0.087)    -0.017 (-0.091 to 0.110)    -0.022 (-0.138 to 0.087)    
+
+## camera Cam4
+measure                                                   before (all its trials)     after (all its trials)      before (common)             after (common)              
+trials                                                    143                         143                         143                         143                         
+subjects                                                  9                           9                           9                           9                           
+matched angle MAE deg                                     5.23 [4.88, 5.64]           5.23 [4.88, 5.65]           5.23 [4.88, 5.64]           5.23 [4.88, 5.65]           
+matched angle cMAE deg                                    3.05 [2.88, 3.22]           3.05 [2.88, 3.22]           3.05 [2.88, 3.22]           3.05 [2.88, 3.22]           
+GRF right vertical MAE %BW                                36.40 [34.62, 38.11]        18.81 [17.00, 20.56]        36.40 [34.62, 38.11]        18.81 [17.00, 20.56]        
+GRF right vertical RMSE %BW (mean)                        52.4                        30.1                        52.4                        30.1                        
+GRF right vertical r (mean over defined, n)               0.44 (120)                  0.73 (143)                  0.44 (120)                  0.73 (143)                  
+GRF right vertical r (median, never loaded = 0)           0.40                        0.79                        0.40                        0.79                        
+GRF left vertical MAE %BW                                 36.68 [35.41, 37.99]        19.23 [16.44, 22.21]        36.68 [35.41, 37.99]        19.23 [16.44, 22.21]        
+GRF left vertical RMSE %BW (mean)                         51.4                        29.7                        51.4                        29.7                        
+GRF left vertical r (mean over defined, n)                0.16 (79)                   0.64 (138)                  0.16 (79)                   0.64 (138)                  
+GRF left vertical r (median, never loaded = 0)            0.00                        0.74                        0.00                        0.74                        
+GRF both vertical MAE %BW                                 55.68 [51.83, 59.61]        19.16 [14.49, 24.56]        55.68 [51.83, 59.61]        19.16 [14.49, 24.56]        
+GRF both vertical RMSE %BW (mean)                         74.4                        31.0                        74.4                        31.0                        
+GRF both vertical r (mean over defined, n)                0.45 (128)                  0.74 (143)                  0.45 (128)                  0.74 (143)                  
+GRF both vertical r (median, never loaded = 0)            0.40                        0.84                        0.40                        0.84                        
+GRF both anterior-posterior MAE %BW                       5.95 [5.66, 6.20]           7.20 [6.74, 7.67]           5.95 [5.66, 6.20]           7.20 [6.74, 7.67]           
+GRF both medial-lateral MAE %BW                           3.18 [3.06, 3.34]           3.16 [2.94, 3.36]           3.18 [3.06, 3.34]           3.16 [2.94, 3.36]           
+forces right vertical r (median over defined)             0.45                        0.78                        0.45                        0.78                        
+forces right vertical RMSE %BW (median)                   51.8                        28.6                        51.8                        28.6                        
+forces left vertical r (median over defined)              0.22                        0.75                        0.22                        0.75                        
+forces left vertical RMSE %BW (median)                    49.9                        27.1                        49.9                        27.1                        
+GRF both 3-axis MAE %BW (mean)                            21.6                        9.8                         21.6                        9.8                         
+stance carried right                                      0.36                        0.81                        0.36                        0.81                        
+stance carried left                                       0.11                        0.73                        0.11                        0.73                        
+residual: share of trials within limits                   0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           0.00 [0.00, 0.00]           
+residual: frames within limits (mean share)               0.005                       0.202                       0.005                       0.202                       
+KAM (walking) right peak error %bw.ht                     2.16 [1.26, 2.85]           2.42 [2.09, 2.74]           2.16 [1.26, 2.85]           2.42 [2.09, 2.74]           
+KAM (walking) right rmse %bw.ht                           2.11 [1.55, 2.56]           2.29 [2.11, 2.43]           2.11 [1.55, 2.56]           2.29 [2.11, 2.43]           
+KAM (walking) left peak error %bw.ht                      2.10 [1.42, 2.58]           1.36 [1.09, 1.63]           2.10 [1.42, 2.58]           1.36 [1.09, 1.63]           
+KAM (walking) left rmse %bw.ht                            1.91 [1.37, 2.33]           1.55 [1.37, 1.78]           1.91 [1.37, 2.33]           1.55 [1.37, 1.78]           
+joint moments, OpenCap's 15, MAE %BW*ht                   2.45 [2.30, 2.63]           2.43 [2.29, 2.59]           2.45 [2.30, 2.63]           2.43 [2.29, 2.59]           
+early-stance external kam l                               {"mae %bw.ht": 1.382, "mean run %bw.ht": 3.297, "mean reference %bw.ht": 2.104, "r2 of subject means": 0.41, "trials": 17, "subjects": 6}{"mae %bw.ht": 1.111, "mean run %bw.ht": 3.146, "mean reference %bw.ht": 2.096, "r2 of subject means": 0.372, "trials": 43, "subjects": 9}{"mae %bw.ht": 1.382, "mean run %bw.ht": 3.297, "mean reference %bw.ht": 2.104, "r2 of subject means": 0.41, "trials": 17, "subjects": 6}{"mae %bw.ht": 1.111, "mean run %bw.ht": 3.146, "mean reference %bw.ht": 2.096, "r2 of subject means": 0.372, "trials": 43, "subjects": 9}
+early-stance external kam r                               {"mae %bw.ht": 1.207, "mean run %bw.ht": 4.87, "mean reference %bw.ht": 3.663, "r2 of subject means": NaN, "trials": 2, "subjects": 2}{"mae %bw.ht": 1.465, "mean run %bw.ht": 5.026, "mean reference %bw.ht": 3.576, "r2 of subject means": 0.051, "trials": 7, "subjects": 4}{"mae %bw.ht": 1.207, "mean run %bw.ht": 4.87, "mean reference %bw.ht": 3.663, "r2 of subject means": NaN, "trials": 2, "subjects": 2}{"mae %bw.ht": 1.465, "mean run %bw.ht": 5.026, "mean reference %bw.ht": 3.576, "r2 of subject means": 0.051, "trials": 7, "subjects": 4}
+early-stance kam l                                        {"mae %bw.ht": 1.422, "mean run %bw.ht": 3.297, "mean reference %bw.ht": 2.053, "r2 of subject means": 0.371, "trials": 17, "subjects": 6}{"mae %bw.ht": 1.16, "mean run %bw.ht": 3.146, "mean reference %bw.ht": 2.041, "r2 of subject means": 0.344, "trials": 43, "subjects": 9}{"mae %bw.ht": 1.422, "mean run %bw.ht": 3.297, "mean reference %bw.ht": 2.053, "r2 of subject means": 0.371, "trials": 17, "subjects": 6}{"mae %bw.ht": 1.16, "mean run %bw.ht": 3.146, "mean reference %bw.ht": 2.041, "r2 of subject means": 0.344, "trials": 43, "subjects": 9}
+early-stance kam r                                        {"mae %bw.ht": 1.287, "mean run %bw.ht": 4.87, "mean reference %bw.ht": 3.583, "r2 of subject means": NaN, "trials": 2, "subjects": 2}{"mae %bw.ht": 1.526, "mean run %bw.ht": 5.026, "mean reference %bw.ht": 3.501, "r2 of subject means": 0.247, "trials": 7, "subjects": 4}{"mae %bw.ht": 1.287, "mean run %bw.ht": 4.87, "mean reference %bw.ht": 3.583, "r2 of subject means": NaN, "trials": 2, "subjects": 2}{"mae %bw.ht": 1.526, "mean run %bw.ht": 5.026, "mean reference %bw.ht": 3.501, "r2 of subject means": 0.247, "trials": 7, "subjects": 4}
+EMG channels                                              16                          16                          16                          16                          
+EMG on/off agreement, mean over channels (range)          0.64 (0.52 to 0.71)         0.66 (0.50 to 0.78)         0.64 (0.52 to 0.71)         0.66 (0.50 to 0.78)         
+EMG r, mean over channels (range)                         0.12 (0.01 to 0.25)         0.23 (-0.06 to 0.44)        0.12 (0.01 to 0.25)         0.23 (-0.06 to 0.44)        
+EMG lag s, mean over channels (range)                     -0.023 (-0.105 to 0.126)    -0.043 (-0.169 to 0.062)    -0.023 (-0.105 to 0.126)    -0.043 (-0.169 to 0.062)    
+
+## per coordinate, envelope (Cam1, no drop jumps): MAE before, after; cMAE before, after; r after (dagger: small range)
+ankle_angle_l             4.45    4.61    3.22    3.32    0.89
+ankle_angle_r             6.41    6.39    3.18    3.19    0.89
+arm_add_l                 3.79    3.98    2.33    2.34    0.70
+arm_add_r                 4.30    4.23    2.25    2.23    0.51+
+arm_flex_l                7.92    8.03    3.11    3.19    0.93
+arm_flex_r                6.77    7.00    3.09    3.19    0.93
+arm_rot_l                 8.19    8.01    4.41    4.50    0.64
+arm_rot_r                 7.25    7.03    4.27    4.09    0.67
+elbow_flex_l             23.80   23.68    4.74    4.61    0.74
+elbow_flex_r             20.96   21.12    3.07    3.00    0.80
+hip_adduction_l           4.78    4.72    2.83    2.76    0.60+
+hip_adduction_r           4.20    4.20    2.81    2.73    0.52+
+hip_flexion_l             7.46    7.37    3.56    3.53    0.98
+hip_flexion_r             8.17    8.03    3.90    3.82    0.98
+hip_rotation_l            4.53    4.41    3.19    3.06    0.43+
+hip_rotation_r            4.10    4.07    2.62    2.62    0.43+
+knee_angle_l              6.10    5.94    3.33    3.24    0.98
+knee_angle_r              6.30    6.06    3.16    3.04    0.99
+lumbar_bending            4.37    4.19    3.31    3.21    0.44
+lumbar_extension          4.66    4.56    3.15    3.11    0.64
+lumbar_rotation           3.67    3.67    2.14    2.12    0.58+
+mtp_angle_l              15.23   15.35    2.49    2.47    0.15+
+mtp_angle_r              15.17   15.22    2.58    2.55   -0.02+
+pelvis_list               3.26    3.15    2.48    2.46    0.17+
+pelvis_rotation           2.76    2.70    2.63    2.57    0.50+
+pelvis_tilt               5.93    6.06    3.60    3.64    0.51
+pro_sup_l                    -       -    2.82    2.82    0.16+
+pro_sup_r                    -       -    2.44    2.55    0.18+
+subtalar_angle_l          9.18    9.24    7.02    6.88   -0.21
+subtalar_angle_r          9.02    9.16    6.26    6.26    0.04
+
+## per coordinate, all: MAE before, after; cMAE before, after; r after (dagger: small range)
+ankle_angle_l             5.52    5.51    3.75    3.75    0.92
+ankle_angle_r             5.97    5.96    3.94    3.92    0.92
+arm_add_l                 6.62    6.58    5.18    5.12    0.70
+arm_add_r                 6.22    6.16    4.45    4.40    0.64
+arm_flex_l               12.59   12.46    8.72    8.59    0.90
+arm_flex_r               11.32   11.20    8.65    8.52    0.90
+arm_rot_l                12.48   12.35    9.91    9.78    0.67
+arm_rot_r                11.31   11.18    8.74    8.61    0.68
+elbow_flex_l             24.77   24.70    5.73    5.67    0.79
+elbow_flex_r             22.79   22.74    5.84    5.76    0.76
+hip_adduction_l           3.48    3.52    2.50    2.52    0.57+
+hip_adduction_r           3.69    3.72    2.58    2.59    0.52+
+hip_flexion_l             8.96    8.93    4.22    4.17    0.98
+hip_flexion_r             8.91    8.89    4.16    4.11    0.98
+hip_rotation_l            4.22    4.20    3.03    3.00    0.54
+hip_rotation_r            4.38    4.36    2.77    2.77    0.51
+knee_angle_l              6.11    6.09    3.51    3.50    0.98
+knee_angle_r              6.02    5.99    3.18    3.17    0.99
+lumbar_bending            3.68    3.69    2.51    2.54    0.45+
+lumbar_extension          5.36    5.32    3.37    3.35    0.75
+lumbar_rotation           4.01    3.97    2.74    2.71    0.44
+mtp_angle_l              15.73   15.74    2.19    2.19    0.10+
+mtp_angle_r              14.99   14.99    2.05    2.06    0.00+
+pelvis_list               3.10    3.11    2.22    2.24    0.16+
+pelvis_rotation           2.66    2.63    2.45    2.42    0.48+
+pelvis_tilt               7.05    7.02    4.43    4.39    0.40
+pro_sup_l                    -       -    3.63    3.61    0.25
+pro_sup_r                    -       -    3.48    3.46    0.26+
+subtalar_angle_l          9.74    9.73    6.25    6.25   -0.07
+subtalar_angle_r         11.44   11.39    6.21    6.21    0.04
+
+## per coordinate, held out 7-11, envelope: MAE before, after; cMAE before, after; r after (dagger: small range)
+ankle_angle_l             4.35    4.50    3.04    3.05    0.90
+ankle_angle_r             5.92    6.04    3.23    3.22    0.89
+arm_add_l                 3.56    3.68    2.37    2.40    0.64
+arm_add_r                 4.60    4.43    2.44    2.45    0.45+
+arm_flex_l                8.49    8.34    3.02    3.12    0.96
+arm_flex_r                6.32    6.43    2.85    3.02    0.94
+arm_rot_l                 7.63    7.78    4.01    3.96    0.74
+arm_rot_r                 7.98    7.84    4.02    3.89    0.73
+elbow_flex_l             24.42   24.37    5.15    5.19    0.73
+elbow_flex_r             20.86   20.88    2.80    2.85    0.80
+hip_adduction_l           4.40    4.28    2.81    2.75    0.60+
+hip_adduction_r           4.01    3.95    2.89    2.91    0.49+
+hip_flexion_l             7.49    7.44    2.94    2.93    0.99
+hip_flexion_r             8.70    8.64    3.45    3.45    0.98
+hip_rotation_l            4.77    4.67    3.34    3.24    0.39
+hip_rotation_r            3.88    3.87    2.50    2.44    0.40+
+knee_angle_l              6.15    5.95    3.23    3.20    0.98
+knee_angle_r              6.71    6.52    3.33    3.27    0.98
+lumbar_bending            4.41    4.23    3.16    3.08    0.42
+lumbar_extension          4.43    4.34    2.84    2.82    0.66
+lumbar_rotation           3.33    3.19    1.92    1.90    0.61
+mtp_angle_l              14.96   15.18    2.53    2.46    0.13+
+mtp_angle_r              14.82   15.00    2.63    2.51   -0.03+
+pelvis_list               3.35    3.34    2.31    2.37    0.21+
+pelvis_rotation           2.36    2.32    2.21    2.18    0.58+
+pelvis_tilt               5.78    5.81    3.00    3.01    0.54
+pro_sup_l                    -       -    2.74    2.80    0.17+
+pro_sup_r                    -       -    2.18    2.27    0.32+
+subtalar_angle_l          9.16    9.27    7.06    7.00   -0.24
+subtalar_angle_r          9.05    8.98    6.15    6.01    0.08
+
+## residuals (after): median over trials of each trial's median |F| %BW, median |M| %BW*com height, 95th percentile |F| %BW; limits 2 %BW and 1 %BW*com height
+envelope (Cam1, no drop jumps)           trials   89  F    5.1  M   8.08  F95   15.8
+all                                      trials  715  F    7.0  M   8.90  F95   24.4
+held out 7-11, all                       trials  396  F    7.1  M   9.31  F95   23.9
+held out 7-11, envelope                  trials   49  F    5.4  M   9.00  F95   15.8
+training 2-5, all                        trials  319  F    6.8  M   8.23  F95   24.4
+activity drop jump                       trials  268  F   10.9  M   9.32  F95   85.5
+activity sit-to-stand                    trials   90  F    0.2  M   2.82  F95    8.8
+activity squats                          trials   87  F    0.7  M   1.06  F95    8.4
+activity walking                         trials  135  F    7.8  M  10.99  F95   23.0
+activity walking (trunk sway)            trials  135  F    7.0  M   9.59  F95   20.3
+camera Cam0                              trials  144  F    7.2  M   9.31  F95   21.5
+camera Cam1                              trials  141  F    7.4  M   9.31  F95   20.9
+camera Cam2                              trials  144  F    5.8  M   7.35  F95   24.8
+camera Cam3                              trials  143  F    6.8  M   9.01  F95   27.7
+camera Cam4                              trials  143  F    7.2  M   9.20  F95   28.0
+
+## vasti symmetry (squats; OpenCap's index and AUC, labval-validation's _symmetry at dfde567d), before
+camera        natural trials  natural si    natural >1.15  asym trials   asym si       asym >1.15    auc instructed  auc emg label  label trials  label positives
+Cam0          9             0.97          0.44          9             1.04          0.33          0.47          0.64          18            14          
+Cam1          6             1.01          0.33          9             1.21          0.56          0.52          0.08          15            12          
+Cam2          9             0.80          0.00          9             0.86          0.33          0.60          0.52          18            14          
+Cam3          8             0.97          0.38          9             1.51          0.78          0.75          0.65          17            13          
+Cam4          8             1.25          0.50          9             1.55          0.56          0.53          0.25          17            13          
+all           40            0.97          0.33          45            1.18          0.51          0.56          0.45          85            66          
+EMG (lab)     9             1.22          0.67          9             1.76          0.89          0.91          -                                       
+
+## vasti symmetry, after
+camera        natural trials  natural si    natural >1.15  asym trials   asym si       asym >1.15    auc instructed  auc emg label  label trials  label positives
+Cam0          9             0.76          0.11          9             1.19          0.56          0.84          0.75          18            14          
+Cam1          8             -0.03         0.12          9             0.75          0.11          0.72          0.62          17            13          
+Cam2          9             1.02          0.33          9             1.71          0.89          0.95          0.84          18            14          
+Cam3          8             1.58          0.88          9             1.82          0.89          0.90          0.83          17            13          
+Cam4          8             1.54          0.88          9             1.73          0.89          0.81          0.48          17            13          
+all           42            1.00          0.45          45            1.61          0.67          0.73          0.66          87            67          
+EMG (lab)     9             1.22          0.67          9             1.76          0.89          0.91          -                                       
+
+## EMG per channel, all 715 trials (after): on/off agreement, r, lag s
+bflh_l     0.65 0.13 -0.130
+bflh_r     0.65 0.13 -0.144
+gasmed_l   0.70 0.23 -0.009
+gasmed_r   0.69 0.26 -0.022
+glmed1_l   0.51 0.13 +0.051
+glmed1_r   0.52 0.15 +0.040
+recfem_l   0.56 -0.08 -0.002
+semiten_l  0.66 0.18 -0.053
+semiten_r  0.70 0.23 -0.034
+soleus_l   0.70 0.26 -0.030
+soleus_r   0.69 0.28 -0.041
+tibant_l   0.59 0.22 +0.031
+vaslat_l   0.72 0.40 -0.003
+vaslat_r   0.72 0.42 -0.018
+vasmed_l   0.72 0.36 -0.024
+vasmed_r   0.76 0.41 -0.033
+
+## sim body wall seconds per step, after (out.json 'seconds', per run)
+card       step                                                            runs  median s  min s   max s    median s/frame  min s/frame  max s/frame
+NVIDIA L4  fit                                                             715   21.825    14.483  623.317  0.303           0.109        3.667
+NVIDIA L4  set up: Newton's model, its card, the filtered path             715   4.697     3.878   32.851   0.061           0.021        0.632
+NVIDIA L4  footing                                                         715   4.669     1.758   35.312   0.062           0.011        0.465
+NVIDIA L4  RRA, rounds                                                     715   19.862    5.910   392.306  0.246           0.110        2.176
+NVIDIA L4  RRA, follows and frame caps                                     715   4.603     1.714   45.888   0.061           0.029        0.079
+NVIDIA L4  checks: RRA's record, feet held, following on MuJoCo's compile  715   2.120     1.111   17.879   0.028           0.025        0.034
+NVIDIA L4  static optimisation 1, ground reaction                          715   3.003     0.114   28.318   0.034           0.002        0.112
+NVIDIA L4  static optimisation 2, stops and muscles                        715   2.296     1.169   22.356   0.032           0.023        0.053
+NVIDIA L4  inverse dynamics, contacts and muscle paths                     715   1.120     0.356   12.459   0.013           0.008        0.025
+NVIDIA L4  records and push measures                                       715   0.264     0.042   2.639    0.003           0.001        0.010
+NVIDIA L4  arrays                                                          715   0.005     0.003   0.012    0.000           0.000        0.000
+NVIDIA L4  total                                                           715   66.214    34.843  788.668  0.871           0.375        5.552
+
+## OpenCap's published figures the tables sit beside (Uhlrich et al. 2023, PLOS Comput Biol 19(10): e1011462, two
+## cameras; as tools/labval/_tables.py REFERENCE at commit dfde567d reads them)
+GRF MAE % body weight: vertical 11.4, anterior-posterior 3.5, medial-lateral 3.8 (three-axis mean 6.2)
+joint moment MAE % body weight x height: 1.2
+early-stance knee adduction moment peak: MAE 0.30 % body weight x height, r2 0.80
+vasti symmetry AUC against the EMG label (squats): 0.83
+
+## signed offsets (after): mean over each trial's frames of (MOTOR - lab IK) on the scored shift, all 89 envelope trials (Cam1, no drop jumps)
+elbow_flex_r 89 trials: mean -21.12 deg, negative in 89 of 89
+elbow_flex_l 89 trials: mean -23.66 deg, negative in 89 of 89
+pelvis_tilt  89 trials: mean +5.26 deg, positive in 82 of 89
+mtp_angle_r  89 trials: mean +15.22 deg, positive in 89 of 89
+The elbow offset is GEM-X's arm estimate, not the sim body's: paper/motor/evidence/elbow-2026-11-07.txt.

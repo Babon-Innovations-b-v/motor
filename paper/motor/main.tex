@@ -1,0 +1,1194 @@
+\documentclass[11pt]{article}
+
+% MOTOR paper (#98). Same class, packages, margins and bibliography style as SCORE's paper (paper/score/arxiv/main.tex).
+% Build: tectonic -X compile --keep-intermediates main.tex (paper/CLAUDE.md), then delete main.aux, main.out, main.log.
+% The story is the one agreed with the owner on 2026-11-08, #98 comment 6723992362: two ecosystems, physical AI and
+% biomechanics; SOMA physical AI's standard body, MyoFullBody a candidate standard musculoskeletal model, MOTOR the
+% solver between the two standards (owner, 2026-11-08). The main body has four sections (related work, method, results,
+% discussion), about 3 pages of text, and is at most 4 pages
+% (it ends at \label{endofmain}) and follows the structure and register of the author's published paper (arXiv:2607.17639,
+% cited as kardolus2026direct) for structure and tone only; none of its method is used here.
+% Every number is read from a source named in a comment beside it. MOTOR is the per-frame solver (owner, 2026-11-09,
+% recorded on #98: "report the fast per-frame solver as the result and make the whole-trial solve future work"); its
+% results are the LabValidation run of 2026-11-07 with its residual reduction and physics run again on 2026-11-09 after
+% fixes 18fed046 and 202bd660 (paper/motor/evidence/moments-labval-2026-11-09.txt, "after (all its trials)" columns,
+% 716 of 720); measures that file does not hold (EMG per channel, vasti symmetry, signed offsets, time per step) are the
+% 2026-11-07 run's (paper/motor/evidence/labval-final-2026-11-07.txt), said where they are used. Every comparison with
+% OpenCap is measured as OpenCap measures it (same activities, activities weighted equally, its camera positions):
+% paper/motor/evidence/comparison-2026-11-09.txt, the same 716 runs re-scored (#98 comment 6744969345). The whole-trial
+% solve appears only as future work in the discussion, its numbers from paper/motor/evidence/motor-labval-2026-11-09.txt.
+% OpenCap's numbers are its published ones; neither OpenCap nor PBL was rerun here.
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{lmodern}
+  \usepackage{textcomp}
+\else
+  \usepackage{fontspec}
+\fi
+\usepackage{amsmath,amssymb}
+\usepackage{longtable,booktabs,array,calc}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds}
+\pgfdeclarelayer{back}\pgfsetlayers{back,background,main}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{microtype}
+\usepackage{placeins}
+\usepackage{caption}
+\captionsetup{font=small,skip=4pt}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\setlength{\emergencystretch}{3em}
+\makeatletter\def\fps@figure{tp}\def\fps@table{tp}\makeatother
+\renewcommand{\topfraction}{0.9}\renewcommand{\textfraction}{0.1}\renewcommand{\floatpagefraction}{0.8}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+
+\newcommand{\dg}{\ensuremath{^\circ}}
+
+
+\title{MOTOR: Musculoskeletal Optimisation Through Open Robotics Simulation}
+\author{J.P. Kardolus, Babon Innovations B.V., Utrecht, The Netherlands}
+\date{Working draft, 9 November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Physical AI now estimates and generates moving human bodies at a scale biomechanics has never had, yet
+the two fields cannot use each other's work: each is fragmented across its own body models, skeletons and solvers,
+and every bridge between them is a chain built for one body model and one route. We present MOTOR, a single open
+solver that takes any body physical AI produces, in SOMA's unified form of skin mesh, segment rotations and joint
+centres, drives the full-body musculoskeletal model MyoFullBody with it, and returns what biomechanics measures: joint
+angles in the ISB conventions, joint moments, ground reaction forces and the force in every muscle. It runs on
+physical AI's own GPU stack, Newton and MuJoCo Warp, because the more complex the bodies and movements we simulate,
+the more parallel a solver has to be. From one camera on OpenCap's LabValidation cohort, its activities weighted
+equally as OpenCap weights them, MOTOR's joint angle error is 5.6\dg{} (OpenCap Monocular: 4.8\dg), its vertical
+ground force error 13.3\% of body weight (OpenCap, two cameras: 11.4\%; without drop jumps 10.5 against 6.8\%) and
+its joint moment error about twice OpenCap's, in 66\,s per trial on one GPU against the 44 to 70 minutes of
+OpenCap's recorded solves. One solver in place of many chains gives physical AI bodies
+that obey the mechanics of muscle and bone, and gives biomechanics the scale to study the forces behind human
+movement far beyond the laboratory.
+\end{abstract}
+% Abstract numbers: paper/motor/evidence/comparison-2026-11-09.txt ("Cam1", mean, no drop jumps: angles15 5.62;
+% "Cam1+Cam3": mean, 4 activities: vert 13.29; mean, no drop jumps: vert 10.50; joint moments Cam1+Cam3 mean 4 2.17,
+% mean no DJ 1.69; OpenCap's published figures: angles 4.8 (Monocular), vertical 11.4 and 6.8, moments 1.22 and 0.80).
+% Moment ratios (about twice): 2.17 / 1.22 = 1.78, 1.69 / 0.80 = 2.11. 66 s:
+% labval-final-2026-11-07.txt ("sim body wall seconds per step": total median 66.214 s); OpenCap's solves 2635 to
+% 4196 s: our timing of the solves recorded in its LabValidation release, #98 comment 6696117098.
+
+\section{Related work}
+
+Physical AI, concerned with agents that perceive and act in the physical world, has produced a broad set of tools
+for the moving human body: video estimators \cite{gemx,yang2026sam3dbody}, motion generators \cite{rempe2026kimodo}
+and GPU simulators such as Newton and MuJoCo Warp \cite{newton,mujocowarp}, on body models that each have their own
+skeleton \cite{loper2015smpl,ferguson2025mhr}. SOMA \cite{saito2026soma} recovers one unified skeleton from the meshes of SMPL, SMPL-X, MHR and other body models, and
+GEM-X and Kimodo now output SOMA bodies directly, which makes SOMA the field's first standard body.
+
+Biomechanics quantifies the forces that produce movement: from motion capture and force plates, musculoskeletal
+software such as OpenSim \cite{delp2007opensim,seth2018opensim} estimates joint moments and muscle forces \cite{winter2009biomechanics}, with models and solvers as varied as physical
+AI's body models were \cite{dembia2020moco,werling2023addbiomechanics}. MyoFullBody, from MyoSuite
+\cite{caggiano2022myosuite}, is a candidate to serve musculoskeletal modelling as SOMA serves body models.
+
+Existing bridges are each built for one body model and one route: OpenCap fits an OpenSim model to keypoints from
+smartphone video \cite{uhlrich2023opencap,gilon2026monocular}, HSMR and BioPose regress biomechanical poses from
+images \cite{xia2025hsmr,koleini2025biopose}, differentiable MuJoCo models are fitted to video
+\cite{cotton2024differentiable}, and MuscleMimic and MS-Human-700 train muscle-driven bodies on MuJoCo Warp
+\cite{li2026musclemimic,wei2026mshuman}.
+
+The Portable Biomechanics Laboratory (PBL) \cite{peiffer2025pbl} fits a biomechanical model to monocular smartphone
+video end to end on MuJoCo's MJX, representing each trial's movement as an implicit function of time and optimising
+the body scale and marker offsets jointly across a session's trials, with joint angle errors below 3\dg. Biomechanical 3D Body (B3D) \cite{cotton2026b3d}, from the same group, distils biomechanical
+pose into a per-frame regressor that comes within half a degree of PBL's lower-limb angle error on a clinical cohort
+(3.66 against 3.24\dg) at two to three orders of magnitude its speed. SKEL \cite{keller2023skel} places a biomechanical skeleton inside
+the skin of the SMPL body model. MOTOR takes from PBL and B3D its constants fitted once across many frames or bodies
+and its GPU computation, and, like B3D, solves each frame on its own. It adds a SOMA body as input, SKEL's bones
+inside the skin as a fitting target, and ground reaction and muscle forces solved on the same GPU.
+% PBL, read 2026-11-08 at arxiv.org/html/2507.08268: "Mujoco's GPU acceleration engine, MJX, supports parallelizing
+% forward kinematic passes"; the movement an "implicit function" of time per trial; "jointly learning kinematics and
+% body scaling and marker offset for the entire session" (bilevel optimization); "mean joint-angle errors < 3°" (abstract); "no
+% inverse dynamics or kinetic estimation was performed". B3D, read 2026-11-09 at arxiv.org/html/2608.29928: "a
+% stateless per-frame forward pass ... with no temporal window (unlike PBL and OpenCap)" (Section 3.7); clinical
+% lower-limb angle error 3.66 (B3D) against 3.24 deg (PBL), Table 2; about 15 to 20 frames/s batched against PBL's 0.03
+% to 0.14 frames/s, "two to three orders of magnitude slower" (Section 4.5).
+
+MOTOR is a single solver between the two standards, from a SOMA body, and through SOMA any body model it unifies, to
+MyoFullBody's angles in the ISB conventions \cite{wu2002isb,wu2005isb} and its forces. To our knowledge, it is the
+first open chain from video to muscle forces (fit, residual reduction, static optimisation) on Newton and MuJoCo Warp.
+% Novelty search and allowed claim: #98 comment 6683620930 ("Newton novelty", 2026-11-06).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/teaser.pdf}
+\caption{MOTOR on a squat, LabValidation's 45\dg{} camera. (a) GEM-X's SOMA body at the deepest point. (b) MOTOR's
+MyoFullBody in that skin, muscles coloured by activation. (c) MOTOR's vertical ground force per foot and knee flexion;
+dashed: (a) and (b).}
+\label{fig:teaser}
+\end{figure}
+% Drawn for this draft from MOTOR's LabValidation run of 2026-11-07 (labval-final-2026-11-07.txt), trial
+% subject2_squats1_Cam1, frame 216 of 240 (the knee's deepest flexion); the plotted series and their source fields
+% are paper/motor/evidence/teaser-2026-11-07.json. (a) is the SOMA skin posed from the run's targets.npz (subdivided for
+% display), (b) the run's out.npz bones, muscle paths and activations in that skin; both rendered in Blender 5.0 Cycles
+% with one camera and one set of lights, and the figure made, by figures/teaser/ (prepare.py, render.py, compose.py).
+
+\section{Method}
+\label{sec:method}
+
+MOTOR has two layers (Figure~\ref{fig:structure}; Appendix~\ref{app:method} in full): a calibration, run once and
+offline, and a solver per recording. MyoFullBody \cite{caggiano2022myosuite,holzbaur2005upper} has 416 muscles and 132
+joints; its bones are sized to the SOMA body's segments and its masses distributed by their volumes.
+% Counts: paper/motor/evidence/model-2026-11-06.txt (muscle actuators 416, joints 132). Sizing and masses:
+% score/stages/sim_body/inside/fit/CLAUDE.md ("No size unknowns": lengths from inside/sizing), inside/volumes.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\footnotesize, node distance=1mm,
+  item/.style={draw, thin, rounded corners=1pt, fill=white, text width=29mm, minimum height=4.2mm, inner sep=0.6mm,
+    align=center},
+  group/.style={draw, thin, rounded corners=2pt, fill=black!7, inner sep=1.5mm},
+  layer/.style={draw, thin, rounded corners=3pt, inner sep=2mm},
+  ghead/.style={font=\footnotesize\bfseries, inner sep=0.5mm, anchor=north},
+  lhead/.style={font=\footnotesize\itshape, inner sep=0.5mm},
+  flow/.style={-{Stealth[length=1.5mm]}, semithick}]
+% The solver layer: four groups in a row.
+\node[ghead] (inH) at (0mm, 0) {Input body};
+\node[ghead] (fitH) at (40mm, 0) {Fitting the solver};
+\node[ghead] (forceH) at (80mm, 0) {Forces, per frame};
+\node[ghead] (outH) at (120mm, 0) {Outputs};
+\node[item, below=of inH] (in1) {skin mesh};
+\node[item, below=of in1] (in2) {segment rotations};
+\node[item, below=of in2] (in3) {joint centres};
+\node[item, below=of fitH] (fit1) {per person};
+\node[item, below=4.6mm of fit1] (fit2) {per frame, Eq.~\eqref{eq:fit}};
+\node[item, below=of forceH] (fo1) {footing on the floor};
+\node[item, below=of fo1] (fo2) {residual reduction};
+\node[item, below=of fo2] (fo3) {ground force};
+\node[item, below=of fo3] (fo4) {muscle activations};
+\node[item, below=of outH] (out1) {joint angles (ISB)};
+\node[item, below=of out1] (out2) {joint moments};
+\node[item, below=of out2] (out3) {ground forces};
+\node[item, below=of out3] (out4) {muscle forces};
+\draw[flow] (fit1) -- (fit2);
+\coordinate (inB) at (in1.west |- fo4.south);
+\coordinate (fitB) at (fit1.west |- fo4.south);
+\begin{scope}[on background layer]
+\node[group, fit=(inH)(in1)(in3)(inB)] (inG) {};
+\node[group, fit=(fitH)(fit1)(fit2)(fitB)] (fitG) {};
+\node[group, fit=(forceH)(fo1)(fo4)] (forceG) {};
+\node[group, fit=(outH)(out1)(out4)] (outG) {};
+\end{scope}
+\draw[flow] (inG) -- (fitG);
+\draw[flow] (fitG) -- (forceG);
+\draw[flow] (forceG) -- (outG);
+\node[lhead, anchor=south east] (solverH) at ([yshift=1.2mm]outG.north east) {Solver: per recording, one GPU};
+\begin{pgfonlayer}{back}
+\node[layer, fill=black!1.5, fit=(inG)(outG)(solverH)] (solverL) {};
+\end{pgfonlayer}
+% The calibration layer above it, its columns over the solver's.
+\node[item] (cal1) at (0mm, 15mm) {synthetic bodies};
+\node[item] (cal2) at (40mm, 15mm) {fitting the solver};
+\node[item] (cal3) at (80mm, 15mm) {landmark constants};
+\node[item] (cal4) at (120mm, 15mm) {held-out check};
+\draw[flow] (cal1) -- (cal2);
+\draw[flow] (cal2) -- (cal3);
+\draw[flow] (cal3) -- (cal4);
+\node[lhead, anchor=south west] (calH) at ([yshift=1.2mm]cal1.north west) {Calibration: once, offline};
+\coordinate (calW) at (inG.west |- cal1.center);
+\coordinate (calE) at (outG.east |- cal1.center);
+\begin{pgfonlayer}{back}
+\node[layer, fill=blue!5, fit=(cal1)(cal4)(calH)(calW)(calE)] (calL) {};
+\end{pgfonlayer}
+\draw[flow] (calL.south -| fitG.north) -- node[right, font=\scriptsize, inner sep=1mm] {constants} (fitG.north);
+\end{tikzpicture}
+\caption{The structure of MOTOR: a calibration once, offline, and a solver per recording that fits and then solves
+the forces in every frame.}
+\label{fig:structure}
+\end{figure}
+% Checked against the code: inside/tuning/CLAUDE.md (level 1: landmark links and trusts, segment-end shifts, the two
+% global weights; held out within 10 %), inside/fit/CLAUDE.md (levels 2 and 3), inside/sim_body.py (the run: fit,
+% set-up, footing, RRA, the two stages of static optimisation, inverse dynamics, records) and
+% score/stages/sim_body/CLAUDE.md (the two stages, RRA, the residual never applied).
+
+\paragraph{Calibration.} The constants that hold for every body (each landmark's offset from its bone and weight,
+each segment end's position, two global weights) are estimated by one bounded least-squares problem over synthetic
+SOMA bodies of several shapes and movements, as PBL estimates marker offsets across trials \cite{peiffer2025pbl}. It
+minimises the bones' depth outside the skin and each segment's angle to its bone group, never a reference angle, and
+is accepted only when held-out bodies score within 10\% of those used.
+% inside/tuning/CLAUDE.md (unknowns: links, log trusts mirrored, segment-end shifts within END_REACH 40 mm, "the two
+% global weights"; the two terms, owner 2026-11-03; "Judged only as the whole solver after level 1 ... never by the
+% landmark distances the solver pulls on"); bodies, clips and the held-out rule (within 10 %): #70 comment 6556935195.
+
+\paragraph{Fitting the solver.} The solver first fixes the person's constants (each landmark's point on its bone and
+each joint inside a bone group) from about 30 of their frames together, as PBL and B3D do
+\cite{peiffer2025pbl,cotton2026b3d}, then fits MyoFullBody's coordinates $q$ in each frame by
+\begin{equation}
+\begin{aligned}
+\min_{q}\;& \frac{1}{N_g}\sum_{g=1}^{N_g} \theta_g(q)^2
+ \;+\; \lambda_m \sum_{m} \bar w_m \bigl\lVert p_m(q) - \hat x_m \bigr\rVert^2
+ \;+\; \frac{\lambda_s}{N_b}\sum_{b=1}^{N_b} \bigl\lVert d_b(q) \bigr\rVert^2 \\
+\text{s.t.}\;& q_{\mathrm{F}} = f(q_{\mathrm{L}}), \qquad q_{\min} \le q_{\mathrm{L}} \le q_{\max}.
+\end{aligned}
+\label{eq:fit}
+\end{equation}
+Here $\theta_g$ is the angle between bone group $g$'s orientation and its SOMA segment's rotation, composed with a
+fixed rest alignment read from the two models at rest, each goal normalised by its count as in OpenSim's inverse
+kinematics \cite{seth2018opensim}; each marker $m$, a landmark or segment end, pulls its model point $p_m$ toward its
+point $\hat x_m$ on the SOMA body; and $d_b$ is bone vertex $b$'s offset outside the SOMA skin, after SKEL
+\cite{keller2023skel}. Coupled coordinates $q_{\mathrm{F}}$ follow the leading $q_{\mathrm{L}}$ through MyoFullBody's
+polynomials $f$, within published ranges.
+% inside/fit/CLAUDE.md ("Weights are OpenSim's IK's": each goal over its own count, the turns the main term; "SOMA's
+% group ends are a target"; joints inside a group from the landmarks and couplings; "judge with the bones inside SOMA's
+% skin and the turns"; EqualityConstraintTask for the couplings, ConfigurationLimit on the leading joints);
+% fit/_frames.py weights() (turns 1/N_g, markers marker_goal * trust / sum of trusts, MARKER_GOAL = 2.1169 from level
+% 1); fit/_skin.py SKIN_GOAL = 1.0e3 (swept, #70 2026-11-01), level 3 only; level 2: fit/__init__.py SAMPLE = 30,
+% inside/fit/CLAUDE.md ("The joints inside groups are person constants"); rest alignment: inside/calibration/CLAUDE.md.
+
+\paragraph{Forces.} MOTOR stands the fitted path on the floor the video shows, a plane fitted to the depth
+estimator MoGe-2's points \cite{wang2025moge2}, moving the body only up or down; the ground pushes only on points of
+the SOMA skin that touch it. A residual reduction in the manner of OpenSim's RRA \cite{delp2007opensim} adjusts the
+pelvis, trunk and masses within a per-frame cap so that the ground can explain the movement. The forces are then
+split in the two stages of OpenSim's static optimisation, which keeps the problem well posed: the ground reaction
+force from the pelvis' six balance equations alone, then the 416 muscle activations with that force fixed. What the
+pelvis still needs is the residual, judged against 2\% of body weight and 1\% of weight times centre of mass height
+\cite{hicks2015model} and never applied. Every step solves all frames at once on the GPU, with Warp \cite{warp} and
+MuJoCo Warp \cite{mujocowarp} inside Newton, and two runs agree bit for bit \cite{mujocowarp1835}.
+% Floor: tools/labval/CLAUDE.md ("The floor is seen, not assumed"; "SOMA is the truth": only the travelling joint
+% moved up or down), commits 58c54d6f and 292d6f88. Contact on the skin, a seen standing foot from its lowest point:
+% inside/contact/__init__.py (GAP, STANCE_HIGH). Steps: inside/sim_body.py and score/stages/sim_body/CLAUDE.md (RRA,
+% the two stages, the residual never applied, its limits); nudge 1.0 to 5e-3: inside/muscles/__init__.py (SHARE_COST
+% comment) and commit f8e0d3f7.
+
+% inside/fit/CLAUDE.md (level 3 on the card, every frame at once; the batched tile Cholesky); bit for bit: commit
+% e0c46164 and paper/motor/evidence/speed-2026-11-06.txt; well posed in two stages: inside/muscles/__init__.py
+% (SHARE_COST comment) and commit f8e0d3f7.
+
+\section{Results}
+\label{sec:protocol}
+
+In our pipeline GEM-X \cite{gemx,li2025genmo} turns one phone video into a SOMA body and MOTOR solves it. OpenCap's LabValidation
+cohort \cite{uhlrich2023opencap} has nine healthy subjects filmed by five phones walking, squatting, rising from a
+chair and jumping, with motion capture, force plates and EMG; each of its 720 single-camera recordings is run on its
+own, 716 to the end, and subjects 7 to 11 never chose a setting (Appendix~\ref{app:protocol}). We compare with OpenCap, the only comparable state of the art, through its published
+numbers from two cameras \cite{uhlrich2023opencap} and, for angles, OpenCap Monocular \cite{gilon2026monocular}: same
+cohort and reference, not rerun by us. We did not rerun PBL: the pretrained MeTRAbs keypoint models
+\cite{sarandi2021metrabs} it depends on are licensed for non-commercial use only.
+% Cohort and envelope: #98 comment 6683683998 (nine subjects, 144 trials x five cameras = 720 inputs); full technical
+% validation: #98 comment 6683702742; the held-out split: labval-final-2026-11-07.txt (header); 716 of 720:
+% moments-labval-2026-11-09.txt (section 3, "716 of 720 ran").
+% PBL's licence: AGPL-3.0, its MeTRAbs models non-commercial (MIT code): tools/labval/pbl/CLAUDE.md ("Upstream only,
+% pinned, never copied in"); owner, 2026-11-09 (#98): "opencap is the only comparable state of the art, we couldnt
+% run pbl due to license".
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{MOTOR beside OpenCap's published numbers on the same activities, weighted equally (walking with its
+trunk-sway trials). MOTOR runs on each of OpenCap's $\pm$45\dg{} cameras alone, the runs pooled, or on the 45\dg{}
+camera where marked. Force in \% body weight, feet summed; moments in \% weight $\times$ height; MOTOR nine subjects,
+OpenCap ten.}
+\label{tab:headline}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & OpenCap, 2 cameras & OpenCap Monocular & MOTOR, 1 camera \\
+\midrule
+Joint angles (\dg), no drop jumps, 45\dg{} camera$^a$ & 4.3 & 4.8 & 5.62 \\
+Ground force, vert.\ / ant.\ / med.-lat. & 11.4 / 3.5 / 3.8 & -- & 13.3 / 6.5 / 3.5 \\
+\quad no drop jumps & 6.8 / 1.8 / 3.3 & -- & 10.5 / 6.8 / 3.7 \\
+\quad walking stance, 45\dg{} camera$^b$ & 12.2 / 1.2 / 3.1 & 9.7 / 1.7 / 4.4 & 13.0 / 10.9 / 3.0 \\
+Joint moments, OpenCap's 15; no drop jumps & 1.22; 0.80 & -- & 2.17; 1.69 \\
+Vasti symmetry AUC, squats, Cam1 / Cam3 & 0.83 & -- & 0.62 / 0.83 \\
+Time per trial$^c$ & 44--70 min & -- & 66\,s \\
+\bottomrule
+\end{tabular}
+\par\smallskip\parbox{\linewidth}{\scriptsize $^a$OpenCap's 18 angles add pelvis rotation and subtalar angles. $^b$From OpenCap Monocular's paper, which states no stance threshold and no foot summation.
+$^c$OpenCap: our timing of the solves recorded with its dataset (Table~\ref{tab:timing}); MOTOR: one NVIDIA L4.}
+\end{table}
+% Every MOTOR number: paper/motor/evidence/comparison-2026-11-09.txt (the 716 runs of moments-labval-2026-11-09.txt,
+% re-scored per activity and camera; Cam1 and Cam3 are the +-45 deg pair by the dataset's calibration, its first
+% section). Angles: "Cam1", mean, no drop jumps, angles15 5.62. Forces: "Cam1+Cam3", mean, 4 activities 13.29 / 6.48
+% / 3.45; mean, no drop jumps 10.50 / 6.75 / 3.65. Walking stance: "walking's stance phase only", Cam1 summed 13.0 /
+% 10.9 / 3.0, per foot 20.2 / 9.8 / 3.3. Moments: Cam1+Cam3 mean 4 2.17, mean no DJ 1.69.
+% OpenCap's and OpenCap
+% Monocular's figures: the same file's last section ("OpenCap's published figures set beside these", from #98 comment
+% 6744969345: Uhlrich et al. 2023 Table 1, OpenCap Monocular sections 3.1, 3.2, 3.4 and Figs 3A and 5).
+% Vasti: Cam1 0.62, Cam3 0.83 (labval-final-2026-11-07.txt, "vasti symmetry, after"). Time: OpenCap's solves 2635 to
+% 4196 s, our timing, #98 comment 6696117098; MOTOR labval-final-2026-11-07.txt ("sim body wall seconds per step":
+% total median 66.214 s, one NVIDIA L4).
+
+
+Weighted as OpenCap weights its activities, MOTOR's error over the fifteen matched angles from the 45\dg{} camera is
+5.62\dg{} against OpenCap Monocular's 4.8\dg{} over eighteen (Table~\ref{tab:headline}; 5.16\dg{} pooled over the 89
+recordings, 95\% CI 4.77 to 5.59\dg), and the vertical force under each foot follows the plates
+(Figure~\ref{fig:results}; median $r$ 0.77 and 0.79 on the held-out subjects). Summed over both feet from one of
+OpenCap's camera positions, its error is 13.3\% of body weight against OpenCap's 11.4\% from both, 10.5 against 6.8\%
+without the drop jumps and 13.0 against OpenCap Monocular's 9.7\% in walking stance from the 45\dg{} camera. The
+anterior force has two to four times OpenCap's error, the medio-lateral force about the same, and the joint moments
+2.17 against 1.22\% of weight times height (1.69 against 0.80\% without drop jumps); given the laboratory's
+kinematics and plate forces, MOTOR's moment computation is within 0.4 to 0.8\% of the laboratory's inverse dynamics
+outside the drop jumps: the gap lies in the monocular inputs, about half in each, not in the dynamics
+(Appendix~\ref{app:moments}).
+% Activity-weighted figures, stance, OpenCap's and Monocular's: comparison-2026-11-09.txt (as Table 1's comment;
+% ratios 10.50 / 6.8 = 1.54, anterior 6.48 / 3.5 = 1.85 and 6.75 / 1.8 = 3.75; medio-lateral 3.45 against 3.8 and
+% 3.65 against 3.3). Pooled: moments-labval-2026-11-09.txt, "after (all its trials)": "envelope" (5.16 [4.77, 5.59],
+% 89 trials, 9 subjects), "held out 7-11, all" (forces right/left vertical r, median over defined, 0.77 / 0.79).
+% moments-labval-2026-11-09.txt, section 1: 159 trials, "1 lab kin + lab grf" (walking 0.66, trunk sway 0.80, squats
+% 0.42, sit-to-stand 0.47), "2a run kin + lab grf" 1.74 and "2b lab kin + run grf" 2.24 against "0b"
+% 2.41 and "1" 1.28 ("each leaves about half").
+\section{Discussion}
+
+% Kimodo in SCORE: score/stages/sim_body/CLAUDE.md (the sim body stage solves each scene's clips).
+
+MOTOR's angles come within 0.8\dg{} of OpenCap Monocular's, whose input-quality gate, B3D found
+\cite{cotton2026b3d}, rejected 400 of 1693 clinical inputs, among them posterior and self-occluded views; MOTOR scores
+every recording that ran. B3D's per-frame regressor comes within half a degree of PBL's whole-trial optimisation, and
+both results suggest that optimising the whole trial buys little kinematic accuracy for its cost. Our own whole-trial solve, left to future work, bears this out. Built on PBL's structure with OpenCap's smooth contact
+\cite{uhlrich2023opencap} and the muscles solved with the movement, it held the pelvis residual within both limits
+on twice as many matched frames (40 against 20\%), but no accuracy measure improved beyond its confidence interval
+(angles 5.29\dg, vertical force 12.5\%, moments 2.67\%, EMG $r$ 0.15), at five times the time (309 against 66\,s).
+% B3D, read 2026-11-09 at arxiv.org/html/2608.29928, Sections 4.3 and A.10: the gate "rejects the posterior and
+% self-occluded views common here", 400 of 1693 inputs rejected on the clinical cohort, "may bias its reported
+% accuracy favorably"; Table 2 (3.66 against 3.24 deg). 0.8 = 5.62 - 4.8 (Table 1's sources).
+% Whole-trial solve's numbers: paper/motor/evidence/motor-labval-2026-11-09.txt ("coverage": 713 of 720; "headline",
+% envelope: residual frames within 0.203 against 0.396, matched angle MAE 5.29 against 5.16, GRF both vertical 12.52
+% against 11.56, anterior 7.98 [7.58, 8.31] against 8.37 [7.95, 8.75]; all: moments 2.67 against 2.41, EMG r 0.15
+% against 0.23; "timing per step", NVIDIA L4, total median 308.563 s, beside labval-final-2026-11-07.txt's 66.214 s).
+% Against the per-frame run after the fixes (moments-labval-2026-11-09.txt, after: envelope vertical 11.49, anterior
+% 8.37 [7.95, 8.74], frames within 0.207; all: moments 2.36 [2.23, 2.51]) the comparison stands.
+% Its design: score/stages/sim_body/inside/motor/CLAUDE.md (steps 1, 2 and 4), #98 comment 6721156999.
+
+The pelvis residual stays above its limits (medians 7.2\% of body weight and 8.9\% of weight times centre of mass height). The anterior force error comes
+from the video's centre-of-mass acceleration, and the pelvis' balance fixes the feet's summed force but not its
+horizontal split in double support, which OpenCap takes from its contact model: even with laboratory kinematics each
+foot is 5.5 to 6\% of body weight off. The elbows come out 21 to
+24\dg{} straighter than the laboratory's, as GEM-X's are, and the pelvis tilt is offset by 5.3\dg. The
+activations agree only weakly with the EMG (mean $r$ 0.23, vasti 0.36 to 0.42, rectus femoris $-0.08$) and follow the ground force's
+split between the feet: in the squat of Figure~\ref{fig:teaser}, carried at 90 and 53\% of body weight, one calf is
+active and not the other. Only GEM-X's and Kimodo's SOMA bodies have been run, and LabValidation has only healthy adults.
+% moments-labval-2026-11-09.txt: "residuals (after)" (all: F 7.2, M 8.92), section 2 (per foot on the lab's
+% kinematics: walking x 5.5-6.0 %BW, the sum right; "OpenCap's tracking simulation splits by its contact spheres";
+% the kinematics' anterior demand 17.4 %BW off with the run's kinematics, 2.6 with the lab's: "the anterior error is
+% the video path's centre-of-mass acceleration"). labval-final-2026-11-07.txt (the 2026-11-07 run; envelope angles
+% unchanged in the rerun): "signed offsets" (elbow r -21.12, l -23.66, 89 of 89; pelvis tilt +5.26, 82 of 89), "EMG
+% per channel" (vasti 0.36 to 0.42, recfem_l -0.08; mean r 0.23 in both runs); GEM-X's elbow: paper/motor/evidence/elbow-2026-11-07.txt
+% (median -18.5); per-foot force at frame 216: teaser-2026-11-07.json (left 90.13, right 52.93 %BW); one calf active:
+% Figure 1(b) (#98).
+
+Markerless methods such as OpenCap removed the laboratory from estimating the forces behind movement; MOTOR replaces
+the bespoke chain with one solver between physical AI's standard body and a candidate standard musculoskeletal model.
+
+% Every float of the main body is placed before this point.
+\FloatBarrier
+\label{endofmain}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\clearpage
+\appendix
+\section{The method in full}
+\label{app:method}
+
+This appendix sets out the method in the order in which it runs (Figure~\ref{fig:structure}, Section~\ref{sec:method}). The input body and the
+model are described first, then the correspondence between them and the fit that both later stages share. The
+calibration, done once and offline, follows, and finally the solver that runs on every recording: the person's
+constants, the per-frame fit, and the forces solved on the fitted path. Figure~\ref{fig:skin} shows
+the fitted model inside the skin, at full size, in two poses.
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\linewidth]{figures/simbody-in-skin.jpg}
+\caption{MyoFullBody fitted inside a person's skin from one LabValidation video: (a) a squat at its deepest point,
+(b) walking at mid-stance. Drawn from MOTOR's saved LabValidation results, the muscles coloured by MOTOR's
+activations.}
+\label{fig:skin}
+\end{figure}
+% Figure added in commit 244bae78 from MOTOR's saved LabValidation results; its trials are not recorded there.
+% Cropped of its empty top band for this draft.
+
+\subsection{The input body}
+
+Any source that provides a skin mesh, segment rotations and joint centres can supply MOTOR's input, although only
+SOMA bodies, from GEM-X and Kimodo, have so far been run. In the validation the source is GEM-X
+\cite{gemx,li2025genmo} applied to one smartphone video. GEM-X gives a SOMA body \cite{saito2026soma} per frame,
+consisting of its identity (shape), root translation and global segment rotations, at 30\,Hz, the rate to which
+GEM-X resamples every clip. MOTOR takes this body as given and never changes its shape or pose. GEM-X is given the
+camera's field of view, which MoGe-2 \cite{wang2025moge2} estimates from the same video, and its own contact
+post-process holds the standing feet still. Because GEM-X's output has no floor, the floor is estimated from the
+video: a plane is fitted to MoGe-2's points of the floor beside the person, the whole clip is rotated rigidly so that
+this plane is level, and the clip is lowered until the lowest point of its feet touches it.
+% tools/labval/_soma.py (RATE = 30.0, "its motion-video normalises every clip to 30 Hz") and tools/labval/CLAUDE.md
+% (commit d6ac3b5d); field of view and seen floor: tools/labval/CLAUDE.md ("The floor is seen, not assumed"),
+% commits 58c54d6f and 292d6f88 (#98).
+% Kimodo bodies run: score/stages/sim_body/CLAUDE.md (the sim body stage solves each scene's clips).
+
+\subsection{The musculoskeletal model}
+
+The model is MyoFullBody from MyoSuite \cite{caggiano2022myosuite}, its arm and hand taken from MoBL-ARMS
+\cite{holzbaur2005upper,saul2015benchmarking}. It has 416 muscles, 86 bones and 132 joints, of which one is the free
+root, 36 are coupled to another joint by a polynomial (those of the knee and the shoulder girdle, for example) and 95
+move freely. Its bone groups (below) are sized to the person's SOMA body, each group's length taken from its SOMA
+segment, joint to joint, so that MOTOR solves for no length. Its masses are SOMA's segment volumes distributed over the
+subject's measured mass.
+% Counts: paper/motor/evidence/model-2026-11-06.txt (MuJoCo 3.15.0 on the sized model file). Sizing and masses:
+% score/stages/sim_body/inside/fit/CLAUDE.md ("No size unknowns": lengths from inside/sizing), inside/volumes.
+
+\subsection{Segments, bone groups and landmarks}
+
+\paragraph{Segment rotations and bone groups.} Each SOMA segment is coupled to a \emph{bone group}, the bones of
+MyoFullBody that cover the same part of the body, one of which, the group's \emph{frame bone}, carries the segment's
+rotation (Appendix~\ref{app:parameters}). A spine segment is coupled to the vertebrae at its height, paired by their
+share of the spine's height, and the hand to the bones of the wrist and hand, with the lunate carrying its rotation.
+Each segment drives one group. SOMA has two neck segments where MyoFullBody has a single rigid neck; the first drives
+it, and the second drives nothing, although its rotation error is still reported.
+
+How a segment's frame lines up with its group's frame is read once from the two models at rest (SOMA's template in its
+bind pose, MyoFullBody in its default pose with its couplings applied) and kept as a fixed \emph{rest alignment} per
+group. Each group's anatomical axes are constructed on both models from the same anatomy: the line between the
+group's end joints or between landmarks, the bone's own axis, or a hinge line, such as the line through the first and
+fifth metatarsal heads that the foot and toes share. The feet are then turned about that hinge line until SOMA's foot,
+flat on its floor at rest, corresponds to MyoFullBody's heel bone flat in its default pose, and the groups whose bones
+would stand outside SOMA's skin along those lines (the head first) are turned and shifted rigidly at rest to their
+least depth outside it. The rest alignment is therefore geometry of the two models: it is never fitted to motion data
+or to any reference joint angle, and never per person or per clip.
+% score/stages/sim_body/inside/bone_groups (GROUPS) and inside/calibration (its CLAUDE.md: read at rest by aligning
+% anatomical axes, REFERENCES, HINGED, LONG_LINES, LEVELLED, INSIDE_GROUPS; "Never fit it, never per person or per
+% clip"); one to one: inside/fit/CLAUDE.md ("One segment drives one bone group", owner 2026-11-01); hand under the
+% lunate: fit/__init__.py HAND_TOP.
+
+\paragraph{Virtual markers on anatomical landmarks.} Beside the rotations, the fit uses virtual markers on anatomical
+landmarks, each defined by its anatomy following the ISB recommendations \cite{wu2002isb,wu2005isb}: the acromion, the
+humeral epicondyles, the anterior and posterior superior iliac spines, the malleoli, the metatarsal heads and others.
+Each landmark sits on a fixed point of the SOMA mesh, given as a face and barycentric weights, so that it moves with
+the person's skin, and on the matching point of a MyoFullBody bone, plus an offset from the bone toward the skin. A
+study of the two models placed 102 landmarks, of which the fit uses 84, each with its own weight. No licensed
+dataset's marker list is used.
+% score/stages/sim_body/inside/landmarks/CLAUDE.md (102 from the landmark study of 2026-10-29, 84 the solver's; every
+% point by its anatomical definition, never a licensed dataset's marker list).
+
+\paragraph{Joint centres as segment ends.} SOMA's rig joints mark where each bone group begins and ends: the hips,
+knees, ankles, shoulders, elbows, wrists and the joints between spine segments. Each such end acts as one more marker,
+placed at MyoFullBody's own joint centre there and aimed at SOMA's joint. The joints inside a group (the lumbar
+levels, the shoulder blade, the wrist bones and the joints of the inner foot) are aimed at nothing; the landmarks and
+the model's couplings place them. No joint is treated as a special case.
+% inside/fit/CLAUDE.md ("SOMA's group ends are a target", #70, the owner's plan 2026-10-29).
+
+\paragraph{The skin.} The bones belong inside the body from which they came. SKEL builds this idea into a body model,
+a biomechanical skeleton placed inside the skin of SMPL \cite{keller2023skel}; MOTOR instead uses the input's own skin
+as a target. Each frame's SOMA skin is posed, and a fixed subset of the vertices of every bone mesh is measured against
+it: each vertex's offset to the closest point of the skin, or zero when the vertex lies inside, as decided by the
+generalised winding number \cite{jacobson2013winding}.
+% inside/fit/CLAUDE.md ("Level 3 holds the bones inside the skin; level 2 does not", owner 2026-11-01); fit/_skin.py.
+
+\subsection{The fit}
+\label{sec:fit}
+
+Fitting the solver, Equation~\eqref{eq:fit}, is the objective that the calibration and the solver on every recording
+share. For one frame, with the person's constants fixed, it finds MyoFullBody's coordinates $q$
+that come closest to the input body while every joint stays within its anatomical limits.
+The first term is the main one: for each of the $N_g$ bone groups, it measures the angle between the frame bone's
+orientation $R_g(q)$ and its SOMA segment's rotation $\hat R_g$ composed with the group's rest alignment. The second
+pulls each marker $m$ (the landmarks and the segment ends) at its point $p_m(q)$ on the model toward its point $\hat
+x_m$ on the SOMA body, weighted by $\bar w_m$, its weight $w_m$ over the sum of all. The third holds the $N_b$ bone
+vertices inside the skin, $d_b$ being a vertex's offset outside it. Each goal is normalised by its own count, as OpenSim's inverse kinematics weighs its goals
+\cite{seth2018opensim}. The markers' goal $\lambda_m$ is set by the calibration (2.1169), and the skin goal
+$\lambda_s$ is $10^3$, chosen in a sweep that traded the bones outside the skin against the rotation error. A coupled
+joint (a \emph{follower}) moves with a \emph{leading} coordinate through MyoFullBody's own polynomial $f$, held as an
+equality constraint, and the limits are the published ranges of the leading coordinates, held as bounds. The fingers
+are held at SOMA's rest.
+% Form and weights: inside/fit/CLAUDE.md ("Weights are OpenSim's IK's", "Reuse, not handwritten maths"); MARKER_GOAL =
+% 2.1169: score/stages/sim_body/inside/fit/_frames.py; SKIN_GOAL = 1.0e3: inside/fit/_skin.py and the sweep in
+% inside/fit/CLAUDE.md ("The skin goal, swept"); #70 comment 6556935195 (method record, part 1); fingers at SOMA's
+% rest: #70 issue body (status) and inside/fit/CLAUDE.md (DofFreezingTask for the fingers).
+
+The reference solver is mink \cite{mink}, a differential inverse-kinematics library on MuJoCo. Each of its steps
+solves one quadratic programme, in which the segment rotations and the marker positions are tasks on frames of the
+model, the couplings are equality constraints, the leading coordinates' ranges are limits and the finger joints are
+frozen; the step length is controlled as in Levenberg--Marquardt. The skin term adds three rows per bone vertex, its
+offset from the closest point of the skin, whose Jacobian keeps only the motion away from the closest face, edge or
+vertex of the skin mesh. On the GPU the same step is a damped Gauss--Newton step in the leading coordinates, solved for
+every frame at once with Warp's tile Cholesky factorisation \cite{warp}. On every frame of a development clip it
+matches mink within 0.0025\dg{} in every joint angle and 0.0042\,mm in every model point. A frame that does not
+converge in 300 steps stops the run with an error rather than being kept silently.
+% inside/fit/CLAUDE.md; equal to mink: #70 comment 6556935442 (method record part 2, "Proved equal to mink"); MOST_STEPS = 300:
+% inside/fit/_frames.py and inside/fit/_card/_solve.py.
+
+\subsection{Calibration, once and offline}
+\label{sec:calibration}
+
+The calibration (level 1 in the code) determines the constants of the landmarks that hold for every body, and it runs
+once, offline, before the solver is applied to any recording. One bounded least-squares problem tunes, all together,
+each landmark's offset from its bone (for a landmark that defines a joint, only along its bone); each landmark's
+weight, mirrored and shared between left and right; each segment end's position on MyoFullBody, within 40\,mm of the
+model's own joint centre; and two global weights, the markers' goal $\lambda_m$ and the segment ends' weight among the
+markers. Its objective has two terms, each normalised by its value at the start so that the two weigh alike: each body
+region's bones' depth outside the SOMA skin, and each segment's rotation error against its bone group. Each evaluation
+runs the person stage and the per-frame fit on every tuning body.
+
+The bodies are synthetic SOMA bodies (tall, short, heavy, slim, long- and short-legged), each performing seven clips (a
+Kimodo walk, a rig walk, arm raises, a reach, a squat, running and sit-to-stand). They are split by body into tuning
+and check bodies, with every clip of a body on one side. The check bodies are scored during the run but never used to
+choose, and a tuned point is accepted only when they score within 10\% of the tuning bodies. The calibration's
+gradient is taken through the person stage and the per-frame fit by implicit differentiation; the columns that path
+does not yet cover are taken by finite differences, and every column is checked against finite differences before a
+run is used. The calibration thus sees only synthetic bodies' skin depth and rotation error, never any reference joint
+angle.
+% inside/tuning/CLAUDE.md (unknowns, the two terms, END_REACH 40 mm, the segment-end shifts, owner 2026-11-03);
+% GLOBALS = ("marker goal", "end weight"): inside/tuning/__init__.py; held-out rule and the clips: #70 comment
+% 6556935195 ("Held-out rule", evaluation.accepted); hybrid Jacobian and its gate: #70 comment 6556935442 (part 2,
+% section 5).
+
+\subsection{The solver, per recording}
+
+\paragraph{The person's constants (level 2).} With the calibration fixed, the person's constants are solved from all of
+their frames together \cite{cotton2026b3d}. About 30 frames, spread over the person's clips in proportion to their
+length, are posed, and one sparse least-squares problem solves, together with those frames' coordinates, each
+landmark's point on its bone and the position of each joint inside a bone group, each within 3\,cm of where the
+calibration and the model placed it and drawn back toward it by a weight. Only what the data can distinguish is
+solved: a joint position whose effect on the residuals is a combination of the other unknowns' effects stays where
+the model has it. The landmarks on the soles' pads and on the skull never move, so that a foot cannot sink through the
+sole of the skin nor the skull through the head. This stage has no skin term, because with one the solve moved the
+inside joints by 40 to 52\,mm to reduce the bones' depth outside the skin instead of fitting the person. The constants
+are written into the person's model file, so that every later solve uses them.
+% inside/fit/__init__.py SAMPLE = 30 (spread per clip by length, max(2, round(...)), so the sum can be 31);
+% inside/fit/_constants.py MARK_MOST = 0.03; inside/fit/CLAUDE.md ("The joints inside groups are person constants",
+% "No size unknowns", "Level 3 holds the bones inside the skin; level 2 does not": inside joints moved 40 to 52 mm).
+
+\paragraph{The per-frame fit (level 3).} With the person's constants fixed, every frame solves only its pose, by
+Equation~\eqref{eq:fit}: the rotations as the main term, the markers beside them, the bones inside the skin, and the
+joint limits and couplings as hard constraints. The path is then low-passed by a zero-lag fourth-order Butterworth
+filter at 6\,Hz \cite{winter2009biomechanics} before it is differentiated.
+% score/stages/sim_body/CLAUDE.md ("The path is low-passed (zero-lag 4th-order Butterworth at 6 Hz, Winter 2009)");
+% CUTOFF = 6.0: inside/solvers/__init__.py.
+
+
+\subsection{Forces on the fitted path}
+\label{sec:forces}
+
+\paragraph{Footing on the seen floor.} The clip stands on the floor seen in the video, levelled and lowered onto it as
+described for the input body. Where GEM-X's world drifts vertically
+between flights, the still feet's lowest sole is held at one height. Both steps move only the root up or down; the
+joint angles are unchanged. A sit-to-stand's 40\,cm chair \cite{uhlrich2023opencap} and a drop jump's box are drawn as
+ground where the clip's seated skin and first standing feet place them.
+% tools/labval/CLAUDE.md ("The floor is seen, not assumed"; "Each foot's seen stance and GEM-X's drift":
+% _soma.undrifted, only the travelling joint moved, matched MAE unchanged; "The chair and the box", _supports).
+
+\paragraph{Contact.} The ground pushes only on points of the person's SOMA skin, carried by the bones each segment
+rides, that lie within 5\,mm of it or under it; MyoFullBody's own foot colliders are not used, because they stood
+inside the skin. A foot the video shows standing, by GEM-X's static contact on its ankle or toe, is pushed from its own
+lowest skin point when that point is at most 5\,cm above the floor, because GEM-X's standing feet can stand a few
+millimetres to centimetres off the floor where its leg lengths and foot shape miss. This height, the 5\,mm gap and the
+weight with which the ground force is shared over the touching points are the only contact settings, chosen on
+subjects 2 to 5 against their force plates, never against joint angles (Appendix~\ref{sec:availability}).
+% inside/contact/__init__.py (GAP = 0.005, STANCE_HIGH = 0.05 and its tuning comment; Skin: MyoFullBody's colliders
+% "stood 16 to 27 mm inside a seated astronaut's skin"); seen stance: tools/labval/CLAUDE.md (_soma.seen_stance);
+% tuning arms A to E: labval-final-2026-11-07.txt ("tuning").
+
+\paragraph{Residual reduction.} Inverse dynamics on the MuJoCo model that Newton builds gives the generalised forces
+that each frame's motion needs. A residual reduction in the manner of OpenSim's RRA \cite{delp2007opensim} then adjusts
+the fitted path's pelvis and trunk (the root's six coordinates and the lumbar leading coordinates) and the body's
+masses and torso centre of mass, with RRATool's own formulas, so that the ground explains the movement; as in
+RRATool, the centre of mass moves only across the torso's long axis, along which no moment can observe it. It runs three
+rounds, and each round's move is taken only when the measured residual, lumbar and move cost falls. The move is
+capped on every frame: every segment's rotation within 5\dg{} and the pelvis within 2\,cm of the fitted path, all
+rounds together, and the mass within 2\% of the mass it was made with. The move is low-passed by construction, the
+feet are kept where they stood by re-solving the legs, and a frame whose move puts its bones further outside the skin
+has its share of the move lowered.
+% score/stages/sim_body/CLAUDE.md ("Residual reduction, OpenSim's RRA"); inside/rra/__init__.py (RRA_ROUNDS = 3,
+% MASS_MOST = 0.02); _gates.py (FOLLOWED = 5.0 deg, MOVE_MOST = 0.02 m); the centre of mass across the torso's up
+% only: commit 18fed046 (moments-labval-2026-11-09.txt, section 3).
+
+\paragraph{Static optimisation in two stages.} The forces are split as OpenSim's static optimisation splits them, in
+two stages. The first gives the ground reaction force from the pelvis' six balance equations alone, shared over the
+touching skin points by a small weight on each newton, in two rounds. The second, with that force fixed, gives the
+joints' range stops and the activations of all 416 muscles at least squared activation, through MuJoCo's own muscle
+lengths, moment arms and force curves. Each knee's small rotation of the shin on the femur, which MyoFullBody's knee
+extensors reach only through moment arms of a few millimetres, is held by its ligaments as a stop, so that it does not
+decide how the vasti share their load. Solved as one least-squares problem, the split was ill-posed: a $10^{-6}$ nudge
+of the contacts moved an activation by up to 1.0, against at most $5\times10^{-3}$ in two stages. What the pelvis still
+needs is the residual and what a joint still needs its reserve; both are recorded and judged, and never applied to the
+body.
+% inside/muscles/__init__.py (SHARE_COST = 0.03, SHARE_ROUNDS = 2, STAGES, LIGAMENTS and their comments: knee extensors
+% "reach it by 0.3 to 0.5 cm"); score/stages/sim_body/CLAUDE.md (two stages, least squared activation, residual and
+% reserves never applied); nudge: commit f8e0d3f7 and the SHARE_COST comment.
+
+\paragraph{One GPU, repeatable.} Every step solves every frame at once on the GPU with MuJoCo Warp inside Newton, in
+Warp's deterministic mode, and two runs agree bit for bit.
+% commit e0c46164 and paper/motor/evidence/speed-2026-11-06.txt.
+\section{Validation protocol in full}
+\label{app:protocol}
+
+\paragraph{Camera input.} The video comes from five synchronised iPhones, Cam0 to Cam4 in LabValidation's numbering.
+The 144 non-static trials, each seen by five cameras, give 720 single-camera inputs, every one run on its own. For the
+matched comparison we use the 45\dg{} camera (Cam1) on the non-jumping activities and the fifteen joint angles that
+have a counterpart in OpenCap Monocular's set (Appendix~\ref{app:joints}), the envelope on which OpenCap Monocular
+reports its results \cite{gilon2026monocular} and on which the author's earlier work reported GEM-X's angles
+\cite{kardolus2026direct}. The full technical validation pools all 720 inputs, every activity and every camera.
+% #98 comments 6683683998 (cohort, Cam1 at 45 deg, and envelope) and 6683702742 (full technical validation).
+
+\paragraph{Metrics.} Because video and reference are not synchronised at the millisecond level, each trial receives
+one time shift of the reference before scoring. Joint angles are scored by mean absolute error (MAE), centred MAE
+(cMAE, with each trial's constant offset removed, which separates tracking from offset), root mean square error and
+Pearson's $r$, with a 95\% confidence interval from a per-subject bootstrap of 20{,}000 draws. Ground reaction forces
+are filtered as OpenCap filters them and scored in \% of body weight on three axes with both feet summed (OpenCap does
+not state whether its errors are per foot or summed), and per foot by the correlation of the vertical force. Set
+beside OpenCap, each measure is averaged over the activities with equal weight, as OpenCap averages its own, and
+taken from OpenCap's camera positions, its two at $\pm$45\dg{} (Cam1 and Cam3) or OpenCap Monocular's 45\dg{} camera;
+elsewhere it is pooled over the recordings. Joint moments are scored in \% of weight times height over OpenCap's fifteen, with
+the knee adduction moment's early-stance peak reported separately. In squats, the vasti symmetry index is scored by its
+AUC against the EMG's own asymmetry label. Activations are scored by on--off agreement and correlation with each EMG
+channel, and the pelvis residual by the share of frames within both limits.
+% Scoring: tools/labval (commit 5996a8f2): time shift, overlap 0.5, per-subject bootstrap of 20,000 draws
+% (labval-final-2026-11-07.txt header).
+
+\paragraph{Time.} The solve time is MOTOR's wall time per trial on one named GPU, from the input body to its output,
+set beside our own timing of the OpenCap solves recorded in its LabValidation release, whose hardware is not
+recorded.
+% #98 comment 6696117098 ("Timing comparison"). Averaging and cameras: comparison-2026-11-09.txt (header and its
+% first section: Cam1 and Cam3 the +-45 deg pair by the dataset's calibration).
+
+\paragraph{Joint definitions.}
+\label{app:joints}
+The matched comparison scores fifteen joint angles, the coordinates that have a counterpart in OpenCap Monocular's
+set: ankle angle, knee angle, hip flexion, hip adduction and hip rotation on both sides, together with pelvis tilt,
+pelvis list, lumbar extension, lumbar bending and lumbar rotation. The full technical validation also scores the
+shoulders (arm flexion, adduction and rotation), the elbows, the forearms' pronation--supination, the subtalar and
+metatarsophalangeal angles and pelvis rotation (Appendix~\ref{app:motor}). Each angle is read from MyoFullBody's own
+coordinates after the fit, and nothing is calibrated or regressed against the reference. The hip, knee, ankle,
+subtalar, toe and elbow angles are MyoFullBody's own coordinates of the same name. The pelvis and lumbar angles are
+OpenSim's intrinsic $Z$, $X$, $Y$ angles of the model's own body frames, as the lab's model defines them, and the
+shoulders are the same angles of each humerus on the torso. Pronation--supination has its zero at a different forearm
+pose in each model, so it is scored only by cMAE and $r$. The scoring follows the author's earlier work
+\cite{kardolus2026direct}: one sub-frame time shift of the reference per trial, found on the centred residual of both
+sides' hip, knee and ankle flexion; MAE, cMAE, RMSE and $r$; a dagger where the reference moves less than 15\dg; and
+the per-subject bootstrap of 20{,}000 draws.
+% tools/labval/__init__.py MATCHED; tools/labval/CLAUDE.md ("The angles are MyoFullBody's own coordinates after the
+% sim body's fit", pelvis and lumbar OpenSim's intrinsic Z, X, Y, shoulders of each humerus on the torso, pro_sup
+% cMAE and r only; the scoring protocol, tools/labval/_score.py).
+
+
+\section{Full technical validation of MOTOR}
+\label{app:motor}
+
+This appendix follows the layout of Appendix B of \cite{kardolus2026direct}. It covers MOTOR's run of 7 November 2026
+on all 720 single-camera inputs, with every activity including the drop jumps and each camera as its own input, its
+residual reduction and forces solved again on 9 November from the same fitted paths after two fixes: the torso's
+centre of mass moved only across the torso's long axis (Appendix~\ref{sec:forces}), and the back's moments read at
+its lowest joint, L5/S1, as the laboratory's model has them. 716 were scored, and Section~\ref{app:failures} gives the
+rest by cause. It reports every joint angle MOTOR outputs, the ground reaction forces on all three axes per activity,
+the joint moments, the residuals and every EMG channel, per activity and per camera. Every number is from
+paper/motor/evidence/moments-labval-2026-11-09.txt, except where a caption says it is the 7 November run's
+(paper/motor/evidence/labval-final-2026-11-07.txt), the published solve times of Table~\ref{tab:timing}, and where
+a comment names another source.
+% moments-labval-2026-11-09.txt, section 3 (the fixes 18fed046 and 202bd660, the rerun, 716 of 720) and section 4
+% (the "after (all its trials)" columns).
+
+\FloatBarrier
+\subsection{Every joint angle}
+\begin{center}\small
+\captionof{table}{MAE and centred MAE (degrees) and mean $r$ per coordinate ($^\dagger$: the reference moves less than
+15\dg). Envelope: 45\dg{} camera, no drop jumps (89 trials). All: every scored input (716). The matched 15 first;
+pro\_sup has no shared zero, so only its cMAE.}
+\label{tab:angles}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{Envelope} & \multicolumn{3}{c}{All} \\
+Coordinate & MAE & cMAE & $r$ & MAE & cMAE & $r$ \\
+\midrule
+ankle angle r & 6.39 & 3.19 & 0.89 & 5.96 & 3.93 & 0.92 \\
+ankle angle l & 4.61 & 3.32 & 0.89 & 5.51 & 3.75 & 0.92 \\
+knee angle r & 6.06 & 3.04 & 0.99 & 5.99 & 3.17 & 0.99 \\
+knee angle l & 5.94 & 3.24 & 0.98 & 6.09 & 3.50 & 0.98 \\
+hip flexion r & 8.03 & 3.82 & 0.98 & 8.89 & 4.10 & 0.98 \\
+hip flexion l & 7.37 & 3.54 & 0.98 & 8.93 & 4.16 & 0.98 \\
+hip adduction r & 4.20 & 2.73 & 0.52$^\dagger$ & 3.72 & 2.59 & 0.52$^\dagger$ \\
+hip adduction l & 4.72 & 2.76 & 0.60$^\dagger$ & 3.53 & 2.53 & 0.57$^\dagger$ \\
+hip rotation r & 4.07 & 2.62 & 0.43$^\dagger$ & 4.36 & 2.77 & 0.51 \\
+hip rotation l & 4.41 & 3.06 & 0.43$^\dagger$ & 4.20 & 3.01 & 0.54 \\
+pelvis tilt & 6.06 & 3.64 & 0.51 & 7.02 & 4.39 & 0.40 \\
+pelvis list & 3.15 & 2.46 & 0.17$^\dagger$ & 3.11 & 2.25 & 0.16$^\dagger$ \\
+lumbar extension & 4.56 & 3.11 & 0.64 & 5.33 & 3.35 & 0.75 \\
+lumbar bending & 4.19 & 3.21 & 0.44 & 3.69 & 2.54 & 0.45$^\dagger$ \\
+lumbar rotation & 3.67 & 2.12 & 0.58$^\dagger$ & 3.97 & 2.71 & 0.44 \\
+\midrule
+arm add l & 3.98 & 2.34 & 0.70 & 6.58 & 5.11 & 0.70 \\
+arm add r & 4.23 & 2.23 & 0.51$^\dagger$ & 6.16 & 4.40 & 0.64 \\
+arm flex l & 8.03 & 3.19 & 0.93 & 12.42 & 8.55 & 0.90 \\
+arm flex r & 7.00 & 3.19 & 0.93 & 11.20 & 8.51 & 0.90 \\
+arm rot l & 8.01 & 4.50 & 0.64 & 12.30 & 9.73 & 0.67 \\
+arm rot r & 7.03 & 4.09 & 0.67 & 11.18 & 8.60 & 0.68 \\
+elbow flex l & 23.68 & 4.61 & 0.74 & 24.72 & 5.69 & 0.78 \\
+elbow flex r & 21.12 & 3.00 & 0.80 & 22.76 & 5.77 & 0.76 \\
+mtp angle l & 15.35 & 2.47 & 0.15$^\dagger$ & 15.73 & 2.19 & 0.10$^\dagger$ \\
+mtp angle r & 15.22 & 2.55 & -0.02$^\dagger$ & 15.00 & 2.06 & 0.01$^\dagger$ \\
+pelvis rotation & 2.70 & 2.57 & 0.50$^\dagger$ & 2.63 & 2.42 & 0.48$^\dagger$ \\
+pro sup l & - & 2.82 & 0.16$^\dagger$ & - & 3.60 & 0.25 \\
+pro sup r & - & 2.55 & 0.18$^\dagger$ & - & 3.47 & 0.26$^\dagger$ \\
+subtalar angle l & 9.24 & 6.88 & -0.21 & 9.73 & 6.26 & -0.07 \\
+subtalar angle r & 9.16 & 6.26 & 0.04 & 11.40 & 6.21 & 0.04 \\
+\midrule
+matched 15, pooled & 5.16 & 3.06 & & 5.35 & 3.25 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+% moments-labval-2026-11-09.txt ("per coordinate, envelope" and "per coordinate, all", the after columns; "all":
+% matched angle MAE 5.35, cMAE 3.25).
+The elbows are about 21 to 25\dg{} off with a centred error of 3 to 6\dg{} (straighter than the lab's in each of the 89
+envelope trials; GEM-X's arm estimate, which the fit follows), and the toes (mtp) 15\dg{} off with a centred 2 to
+3\dg: constant offsets, not tracking errors. Figure~\ref{fig:angles} shows the matched 15, and
+Figure~\ref{fig:waveforms} the hip, knee and ankle waveforms.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{figures/angles-bars.pdf}
+\caption{MOTOR's per-coordinate MAE and centred MAE on the matched set, beside MOTOR's previous full run of the same
+inputs (before changes to its contact, floor and knee ligaments), scored with the same code.}
+\label{fig:angles}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{figures/waveforms.pdf}
+\caption{MOTOR's hip, knee and ankle flexion in the 45\dg{} camera's median walking and squat trial (by angle error)
+against the lab's inverse kinematics moved by the scored time shift.}
+\label{fig:waveforms}
+\end{figure}
+% Figures restored from commit 096ac587 (paper/motor/figures/angles-bars.pdf, waveforms.pdf; made in commit 244bae78
+% from the run of paper/motor/evidence/labval-final-2026-11-07.txt and its previous full run).
+
+\FloatBarrier
+\subsection{Per subject group, activity and camera}
+\begin{center}\small
+\captionof{table}{Per group: inputs, matched MAE and cMAE (degrees), vertical GRF MAE (\% body weight, both feet),
+median vertical $r$ per foot over the trials where it is defined, joint moment MAE over OpenCap's 15 (\% weight
+$\times$ height), mean EMG $r$ over the 16 channels. Cameras: LabValidation's numbering; Cam1 is the envelope's 45\dg{}
+camera.}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Group & $n$ & MAE & cMAE & GRF vert. & $r$ R / L & Moments & EMG $r$ \\
+\midrule
+held out 7--11 & 397 & 5.13 & 3.02 & 16.24 & 0.77 / 0.79 & 2.35 & 0.24 \\
+training 2--5 & 319 & 5.63 & 3.54 & 16.09 & 0.78 / 0.77 & 2.37 & 0.22 \\
+walking & 135 & 4.38 & 2.92 & 19.56 & 0.81 / 0.79 & 1.83 & 0.27 \\
+walking (trunk sway) & 135 & 4.67 & 3.05 & 16.29 & 0.82 / 0.84 & 1.68 & 0.27 \\
+squats & 87 & 5.79 & 3.26 & 6.25 & 0.52 / 0.47 & 1.55 & 0.17 \\
+sit-to-stand & 90 & 5.39 & 2.92 & 11.28 & 0.69 / 0.81 & 1.51 & 0.20 \\
+drop jump & 269 & 6.03 & 3.62 & 19.27 & 0.78 / 0.78 & 3.51 & 0.22 \\
+Cam0 & 144 & 5.21 & 3.14 & 14.88 & 0.74 / 0.83 & 2.38 & 0.22 \\
+Cam1 (45\dg) & 143 & 5.63 & 3.34 & 15.49 & 0.73 / 0.81 & 2.49 & 0.22 \\
+Cam2 & 143 & 5.35 & 3.53 & 15.48 & 0.81 / 0.82 & 2.15 & 0.25 \\
+Cam3 & 143 & 5.35 & 3.20 & 15.91 & 0.80 / 0.70 & 2.39 & 0.23 \\
+Cam4 & 143 & 5.23 & 3.05 & 19.14 & 0.78 / 0.74 & 2.38 & 0.22 \\
+\bottomrule
+\end{tabular}
+\end{center}
+% moments-labval-2026-11-09.txt, the "after (all its trials)" column of each group's section ("held out 7-11, all",
+% "training 2-5, all", "activity ...", "camera ..."): matched angle MAE and cMAE, GRF both vertical MAE, forces
+% right/left vertical r (median over defined), joint moments, EMG r mean.
+
+\subsection{Ground reaction force}
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.72\linewidth]{figures/grf.pdf}
+\caption{MOTOR's vertical ground force per foot against the plates (45\dg{} camera).}
+\label{fig:results}
+\end{figure}
+% Restored from commit 096ac587 (paper/motor/figures/grf.pdf, made in commit 244bae78 from the run of
+% labval-final-2026-11-07.txt).
+\begin{center}\small
+\captionof{table}{Ground reaction force per activity, all five cameras: MAE in \% body weight on three axes with
+both feet summed, filtered as OpenCap filters it, the activities' means weighted equally as OpenCap's, and the share of the plate's stance frames on which MOTOR's foot carries force.}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Activity & vertical & anterior & medio-lateral & 3-axis mean & stance carried R / L \\
+\midrule
+all & 16.18 & 7.43 & 2.99 & 8.9 & 0.82 / 0.79 \\
+walking & 19.56 & 12.03 & 3.00 & 11.5 & 0.82 / 0.75 \\
+walking (trunk sway) & 16.29 & 10.86 & 3.41 & 10.2 & 0.83 / 0.85 \\
+squats & 6.25 & 3.53 & 3.31 & 4.4 & 0.99 / 0.95 \\
+sit-to-stand & 11.28 & 4.51 & 3.27 & 6.4 & 0.82 / 0.82 \\
+drop jump & 19.27 & 5.64 & 2.56 & 9.2 & 0.76 / 0.71 \\
+\midrule
+mean of the four activities & 13.68 & 6.28 & 3.09 & 7.7 & -- \\
+\quad without drop jumps & 11.82 & 6.49 & 3.26 & 7.2 & -- \\
+OpenCap, 2 cameras, mean & 11.4 & 3.5 & 3.8 & 6.2 & -- \\
+\quad without drop jumps & 6.8 & 1.8 & 3.3 & 4.0 & -- \\
+\bottomrule
+\end{tabular}
+\end{center}
+% moments-labval-2026-11-09.txt, after columns ("all", "activity ...": GRF both vertical, anterior-posterior,
+% medial-lateral, 3-axis mean, stance carried); the means of the activities: comparison-2026-11-09.txt ("all five",
+% mean, 4 activities and no drop jumps; OpenCap's from its last section; 3-axis: the mean of the three).
+Per foot over all 716 inputs, the vertical force's MAE is 17.8\% of body weight on the right and 17.2\% on the left.
+In the 7 November run, the centre of pressure, with each trial's constant offset removed, was 47.6\,mm off in the
+anterior and 20.2\,mm in the medio-lateral direction, and each stance's vertical impulse 12.6\% below the plate's on
+average.
+% Per foot: moments-labval-2026-11-09.txt ("all", after: GRF right vertical MAE 17.84, left 17.24). Centre of pressure
+% and impulse: paper/motor/evidence/motor-labval-2026-11-09.txt ("GRF and centre of pressure, all trials, chain": the
+% same 715 runs of 2026-11-07 scored by the same code; cop anterior-posterior centred mae
+% 47.563 mm, medial-lateral 20.237 mm, impulse vertical error % of plate -12.594).
+
+\subsection{Joint moments}
+\begin{table}[h]
+\centering\small
+\caption{Joint moment MAE (\% weight $\times$ height) and $r$ per coordinate over all 715 inputs of the 7 November
+run, before the two fixes, against OpenSim's inverse dynamics on the lab's own model. OpenCap's published mean over
+its 15: 1.2.}
+\begin{tabular}{@{}lcc@{\hspace{2em}}lcc@{}}
+\toprule
+Coordinate & MAE & $r$ & Coordinate & MAE & $r$ \\
+\midrule
+hip flexion r & 4.06 & 0.53 & hip flexion l & 3.82 & 0.53 \\
+hip adduction r & 1.97 & 0.21 & hip adduction l & 1.86 & 0.16 \\
+hip rotation r & 0.80 & 0.11 & hip rotation l & 0.76 & 0.13 \\
+knee angle r & 2.83 & 0.39 & knee angle l & 2.71 & 0.37 \\
+ankle angle r & 2.00 & 0.48 & ankle angle l & 2.01 & 0.36 \\
+subtalar angle r & 0.65 & 0.43 & subtalar angle l & 0.57 & 0.40 \\
+lumbar extension & 5.39 & 0.38 & elbow flex r & 0.19 & 0.40 \\
+lumbar bending & 3.62 & 0.27 & elbow flex l & 0.23 & 0.43 \\
+lumbar rotation & 3.14 & 0.27 & pro sup r / l & 0.02 / 0.02 & 0.10 / 0.10 \\
+\midrule
+OpenCap's 15, mean & 2.41 & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+% paper/motor/evidence/motor-labval-2026-11-09.txt ("joint moments, all trials, chain": the same 715 runs of 2026-11-07
+% scored by the same code, "coordinates <name> mae %bw.ht" mean and "r"); the mean of OpenCap's 15:
+% labval-final-2026-11-07.txt ("all", 2.41); OpenCap's 1.2: the same file ("OpenCap's published figures").
+After the two fixes the back's moments fall from 5.39, 3.62 and 3.14 to 4.83, 3.29 and 3.07\% of weight times height
+(extension, bending, rotation), and the mean over OpenCap's 15 from 2.41 to 2.36\%; the fix to the torso's centre of
+mass alone leaves it at 2.43\%, so the gain is the back's moment read at L5/S1.
+% moments-labval-2026-11-09.txt, section 3 ("Effects separated": before 2.41, the RRA fix alone 2.43, with the back's
+% own moment 2.36; lumbar extension, bending, rotation before 5.39, 3.62, 3.14, after 4.83, 3.29, 3.07).
+In walking, the early-stance knee adduction moment's peak is overestimated: on the left knee MOTOR's mean is 3.4\%
+of weight times height against the lab's 2.1\%, a mean error of 1.5\%. From the 45\dg{} camera, both knees together,
+the first peak's error is 1.97\%, against OpenCap Monocular's 0.36\% and two-camera OpenCap's 0.41\% (0.30\% in
+OpenCap's own paper); from Cam3 it is 0.75\%. In the
+recorded runs, the knee of the leg far from the camera sits 37 to 44\,mm from the centre of pressure in the frontal
+plane where the lab has 9 to 16\,mm, which accounts for most of this error.
+% moments-labval-2026-11-09.txt ("all", after: early-stance kam l: mae 1.505, mean run 3.435, mean reference 2.051);
+% Per camera: comparison-2026-11-09.txt ("walking's early-stance knee adduction moment peak": Cam1 1.97, Cam3 0.75;
+% Monocular's 0.36 and 0.41 in its last section); OpenCap's 0.30: labval-final-2026-11-07.txt ("OpenCap's published
+% figures"); far leg: #98 comment 6721835197.
+
+\subsection{Where the moment error comes from}
+\label{app:moments}
+To separate the solver from its inputs, MOTOR's moment computation (the generalised forces each frame needs from
+MuJoCo's inverse dynamics on the run's own model, less the ground force through the contact Jacobian, mapped onto the
+coordinates) was run outside the pipeline on 159 trials (subjects 2, 4, 7, 9 and 11, every activity, the 45\dg{} camera
+and Cam3, the runs before the fixes) with its two inputs, kinematics and ground force, each taken either from the
+monocular run or from the laboratory: the lab's inverse kinematics low-passed at its inverse dynamics cutoff and
+mapped onto MyoFullBody, and the plates' force and free moment with the centre of pressure carried from the lab's
+ankle onto MyoFullBody's. Table~\ref{tab:moments-inputs} gives the result, scored as in the rest of this appendix.
+\begin{table}[h]
+\centering\small
+\caption{Joint moment MAE over OpenCap's 15 (\% weight $\times$ height) from MOTOR's moment computation with each
+input from the laboratory or from the monocular run; 159 trials. OpenCap's published errors: 2.50, 0.68, 0.97 and
+0.75 in drop jumps, sit-to-stand, squats and walking, 1.22 over the four.}
+\label{tab:moments-inputs}
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+Kinematics & Ground force & all & drop jump & sit-to-stand & squats & walking & walking (sway) \\
+\midrule
+laboratory & laboratory & 1.28 & 2.41 & 0.47 & 0.42 & 0.66 & 0.80 \\
+monocular & laboratory & 1.74 & 2.77 & 0.92 & 0.93 & 1.22 & 1.31 \\
+laboratory & monocular & 2.24 & 3.65 & 1.28 & 1.35 & 1.49 & 1.49 \\
+monocular & monocular & 2.41 & 3.65 & 1.57 & 1.58 & 1.78 & 1.71 \\
+\bottomrule
+\end{tabular}
+\end{table}
+% moments-labval-2026-11-09.txt, section 1 (rows 1, 2a, 2b, 0b; 0b reproduces the recorded run's 2.53 within 0.1-0.2);
+% OpenCap's per activity: comparison-2026-11-09.txt, last section.
+With the laboratory's inputs the computation is within 0.42 to 0.80\% of the laboratory's inverse dynamics outside
+the drop jumps, whose remaining 2.41\% is the lumbar: the reference swings about 60\% of weight times height at
+landing. Each monocular input alone leaves about half of the full error. The legs' moments carry the ground force's
+error (hip flexion 3.7\% with the monocular force, 2.3\% with the monocular kinematics), the lumbar's only the
+kinematics' (5.6\% with the monocular kinematics whatever the force, 3.9\% with the laboratory's). Reading the
+back's moment at L5/S1 brought the laboratory-input figure from 1.28 to 1.19\%, the fix carried into the run.
+% moments-labval-2026-11-09.txt, section 1 ("Answer", "Per coordinate", 1d: 1.28 to 1.19).
+
+The ground force solve was checked the same way. Given the laboratory's kinematics, its first stage, the pelvis'
+balance shared over a grid of sole points under each foot the plates show loaded, gives both feet's summed anterior
+and medio-lateral forces within 2.33 and 2.25\% of body weight in walking (the plates' mean anterior magnitude is 8.1\%), and
+1.06 and 0.57\% in squats, leaving a pelvis residual of 1.1\% of body weight; nothing in the solve suppresses the
+horizontal force. The kinematics themselves decide it: the anterior force that the monocular kinematics demand
+($m\mathbf{a} - m\mathbf{g}$ on the pelvis) is 17.4\% of body weight off the plates in walking, against 2.6\% with
+the laboratory's. The split between two feet on the ground is not determined: each foot's anterior force in walking
+is 5.5 to 6.0\% of body weight off with the laboratory's kinematics while their sum is right, since forces that
+cancel between the feet do not act on the pelvis.
+% moments-labval-2026-11-09.txt, section 2 (walking x 2.33, z 2.25, plates' mean |x| 8.1; squats 1.06 / 0.57;
+% residual 1.1 %BW; demand x 17.4 against 2.6; per foot x 5.5-6.0 on walking).
+
+\subsection{Residuals}
+\begin{center}\small
+\captionof{table}{The pelvis residual per group: the median over trials of each trial's median force (\% body weight)
+and moment (\% weight $\times$ centre-of-mass height), the median of each trial's 95th-percentile force, and the mean
+share of frames within both limits (2\% body weight, 1\% weight $\times$ centre of mass height). No trial is within
+them on every frame.}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Group & trials & force & moment & force, 95th pct. & frames within \\
+\midrule
+all & 716 & 7.2 & 8.92 & 24.2 & 0.204 \\
+held out 7--11 & 397 & 7.3 & 9.43 & 24.2 & 0.211 \\
+walking & 135 & 8.1 & 11.00 & 23.1 & 0.062 \\
+walking (trunk sway) & 135 & 7.2 & 9.89 & 20.2 & 0.071 \\
+squats & 87 & 0.9 & 1.21 & 8.4 & 0.485 \\
+sit-to-stand & 90 & 0.3 & 2.87 & 9.1 & 0.460 \\
+drop jump & 269 & 11.0 & 9.38 & 85.6 & 0.166 \\
+\bottomrule
+\end{tabular}
+\end{center}
+% moments-labval-2026-11-09.txt ("residuals (after)"; frames within: each group's "residual: frames within limits",
+% after; "share of trials within limits" 0.00).
+
+\subsection{Muscle activations against EMG}
+\begin{center}\small
+\captionof{table}{Each EMG channel against MOTOR's activation of that muscle, all 715 inputs of the 7 November run
+(over the 716 after the fixes the mean $r$ is unchanged at 0.23, its range $-0.07$ to 0.42): the share of frames on
+which both are on or both off, Pearson's $r$, and the lag (s) at the cross-correlation peak.}
+\begin{tabular}{@{}lccc@{\hspace{2em}}lccc@{}}
+\toprule
+Muscle & on/off & $r$ & lag & Muscle & on/off & $r$ & lag \\
+\midrule
+bflh l & 0.65 & 0.13 & -0.130 & semiten r & 0.70 & 0.23 & -0.034 \\
+bflh r & 0.65 & 0.13 & -0.144 & soleus l & 0.70 & 0.26 & -0.030 \\
+gasmed l & 0.70 & 0.23 & -0.009 & soleus r & 0.69 & 0.28 & -0.041 \\
+gasmed r & 0.69 & 0.26 & -0.022 & tibant l & 0.59 & 0.22 & +0.031 \\
+glmed1 l & 0.51 & 0.13 & +0.051 & vaslat l & 0.72 & 0.40 & -0.003 \\
+glmed1 r & 0.52 & 0.15 & +0.040 & vaslat r & 0.72 & 0.42 & -0.018 \\
+recfem l & 0.56 & -0.08 & -0.002 & vasmed l & 0.72 & 0.36 & -0.024 \\
+semiten l & 0.66 & 0.18 & -0.053 & vasmed r & 0.76 & 0.41 & -0.033 \\
+\bottomrule
+\end{tabular}
+\end{center}
+% labval-final-2026-11-07.txt ("EMG per channel, all 715 trials (after)"); after the fixes: moments-labval-2026-11-09.txt
+% ("all", after: EMG r, mean over channels 0.23 (-0.07 to 0.42)).
+
+\begin{center}\small
+\captionof{table}{OpenCap's vasti symmetry index in squats, per camera, in the 7 November run: the AUC of MOTOR's index against the asymmetry
+the instructions asked for and against the EMG's own label (index over 1.15). OpenCap: 0.83 against the EMG label,
+from its two cameras at $\pm$45\dg, the positions of Cam1 and Cam3.}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Camera & AUC, instructed & AUC, EMG label \\
+\midrule
+Cam0 & 0.84 & 0.75 \\
+Cam1 & 0.72 & 0.62 \\
+Cam2 & 0.95 & 0.84 \\
+Cam3 & 0.90 & 0.83 \\
+Cam4 & 0.81 & 0.48 \\
+all & 0.73 & 0.66 \\
+\bottomrule
+\end{tabular}
+\end{center}
+% labval-final-2026-11-07.txt ("vasti symmetry, after"); Cam1 and Cam3 the +-45 deg pair: comparison-2026-11-09.txt
+% (its first section, from the dataset's calibration); OpenCap's pair: Uhlrich et al. 2023 via #98 comment 6744969345.
+
+\subsection{Time per step}
+\begin{center}\small
+\captionof{table}{MOTOR's wall seconds per step on one NVIDIA L4, over the 715 runs of 7 November: median, range, and the median per
+frame (clips of 30\,Hz).}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Step & median s & min s & max s & s per frame \\
+\midrule
+fit & 21.825 & 14.483 & 623.317 & 0.303 \\
+set-up: physics model, GPU arrays, filtered path & 4.697 & 3.878 & 32.851 & 0.061 \\
+footing & 4.669 & 1.758 & 35.312 & 0.062 \\
+residual reduction, iterations & 19.862 & 5.910 & 392.306 & 0.246 \\
+residual reduction, tracking and per-frame caps & 4.603 & 1.714 & 45.888 & 0.061 \\
+checks: residual record, feet on the floor, tracking & 2.120 & 1.111 & 17.879 & 0.028 \\
+static optimisation, stage 1 (ground reaction) & 3.003 & 0.114 & 28.318 & 0.034 \\
+static optimisation, stage 2 (joint limits and muscles) & 2.296 & 1.169 & 22.356 & 0.032 \\
+inverse dynamics, contacts and muscle paths & 1.120 & 0.356 & 12.459 & 0.013 \\
+writing records and force measures & 0.264 & 0.042 & 2.639 & 0.003 \\
+saving arrays & 0.005 & 0.003 & 0.012 & 0.000 \\
+total & 66.214 & 34.843 & 788.668 & 0.871 \\
+\bottomrule
+\end{tabular}
+\end{center}
+% labval-final-2026-11-07.txt ("sim body wall seconds per step, after").
+
+\begin{table}[h]
+\centering\small
+\caption{Wall time per trial, MOTOR against published solves. OpenCap's solves are those recorded in its
+LabValidation release, timed by us (80 muscles, windows of 0.99 to 1.68\,s, solve only, hardware not recorded); its
+paper reports 37\,min for one squat on one server. MOTOR's time excludes the video pose estimate.}
+\label{tab:timing}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Method & Clip & Wall time \\
+\midrule
+OpenCap solve \cite{uhlrich2023opencap} & walk, drop jump, squat & 4196, 4096, 2635\,s \\
+Moco, MocoTrack \cite{dembia2020moco} & gait & about 130\,min \\
+OpenSim CMC \cite{rajagopal2016fullbody} & gait & about 10\,min \\
+MOTOR, one L4 & LabValidation, 715 trials & 66\,s median (35--789\,s) \\
+\bottomrule
+\end{tabular}
+\end{table}
+% OpenCap's solves, Moco's and CMC's times: #98 comment 6696117098 ("Timing comparison": OpenCap's Setup.yaml and
+% Stats.npy, Dembia 2020, Rajagopal 2016); 37 min: 2 min kinematics and 35 min kinetics for one squat, Uhlrich et al.
+% 2023, Results, field study (#98 comment 6744969345); MOTOR's row: labval-final-2026-11-07.txt ("sim body wall seconds per
+% step": total median 66.214, min 34.843, max 788.668).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{figures/timing.pdf}
+\caption{MOTOR's wall time per trial on a log scale: OpenCap's recorded solves and published OpenSim times (grey),
+MOTOR on two SCORE clips (blue band) and its median on LabValidation (red).}
+\label{fig:timing}
+\end{figure}
+% Restored from commit 096ac587 (paper/motor/figures/timing.pdf, made in 244bae78): OpenCap's, Moco's and CMC's times
+% from #98 comment 6696117098; MOTOR's band from paper/motor/evidence/speed-2026-11-06.txt; its median from
+% labval-final-2026-11-07.txt.
+
+\FloatBarrier
+\subsection{What the run shows}
+
+\paragraph{What the input carries.} MOTOR follows its input, so the input's errors pass through. The elbows come out
+straighter than the lab's in every one of the 89 matched trials, by a mean 21.1\dg{} (right) and 23.7\dg{} (left),
+with centred errors of 3.0 and 4.6\dg. On 540 walking arm trials GEM-X's own elbow is a median 18.5\dg{} straighter
+than the markers', and the fit's elbow differs from GEM-X's by a median 2.5\dg. The pelvis tilt is offset in one
+direction in 82 of 89 matched trials, by a mean 5.3\dg. Neither is calibrated away: no angle is fitted to the
+reference, and reading each subject's own standing trial as a static calibration, tried on the held-out subjects, made
+their pelvis tilt, elbows and matched error worse.
+% paper/motor/evidence/elbow-2026-11-07.txt (540 walking arm-trials, SOMA minus markers median -18.5; sim body
+% minus SOMA median -2.5); labval-final-2026-11-07.txt ("signed offsets": elbow r -21.12, l -23.66, 89 of 89; pelvis
+% tilt +5.26, 82 of 89; per coordinate: envelope cMAE elbow r 3.00, l 4.61); standing trial tried and not used:
+% tools/labval/CLAUDE.md ("The subject's standing pose, tried and not used") and
+% paper/motor/evidence/static-neutral-2026-11-08.txt.
+
+\paragraph{Forces, residuals and the two sides.} The pelvis residual stays above its limits, the anterior ground
+reaction force error is about twice OpenCap's over its four activities and nearly four times without drop jumps, and the activation pattern is partly off (rectus femoris does not
+follow its EMG, $r=-0.08$). The ground force is split between the feet by the skin points that reach the floor and by
+the pelvis' balance, so a foot that GEM-X places a little higher carries less: in the squat of
+Figure~\ref{fig:teaser}, at its deepest frame, the left foot carries 90\% of body weight and the right 53\%, and the
+calf muscles follow that split rather than the symmetric movement.
+% labval-final-2026-11-07.txt ("residuals", "all", "EMG per channel"); anterior against OpenCap:
+% comparison-2026-11-09.txt ("Cam1+Cam3" 6.48 against 3.5, 6.75 against 1.8); teaser-2026-11-07.json (frame 216: left 90.13,
+% right 52.93 %BW); inside/contact/__init__.py (STANCE_HIGH comment: GEM-X's standing sole 18 to 28 mm up).
+
+\paragraph{Camera sampling and fast movements.} GEM-X resamples every clip to 30\,Hz, so an impact or a push-off is
+sampled at that rate whatever the phone recorded. Of the five activities the drop jumps have the highest joint moment
+error (3.51\% of weight times height, against 1.51 to 1.83 for the others) and the largest pelvis residual (a median of
+11.0\% of body weight, its 95th percentile 85.6\%).
+% 30 Hz: tools/labval/_soma.py RATE. Drop jumps: moments-labval-2026-11-09.txt (after: "activity ..." moments drop jump
+% 3.51, walking 1.83, sit-to-stand 1.51; "residuals (after)" drop jump 11.0 and 85.6).
+
+\paragraph{The fit's own records.} The calibration (level 1) tunes on synthetic SOMA bodies, not on people. The last
+calibration run whose held-out score is recorded met its rule: its check bodies' score fell from 4.26 to 3.56 while the tuning bodies' fell
+from 4.53 to 3.44, and the rule's comparison, 3.56 against the tuning bodies' 3.51, was within 10\%. The tuned point
+the fit uses now came from a later run with a broader objective, whose held-out score is not yet recorded. The bones
+are not yet all inside the skin: on the fifteen clips of the synthetic body of mean shape, 5.15\% of the bone points
+lie outside it (averaged over body regions), against a target of under 5\%.
+% Level 1 run l1e: #70 comment 6556935709 ("C. Level 1 runs": tuning 4.5259 to 3.4404, check 4.2602 to 3.5597,
+% "within 10 %: yes (3.56 against 3.51)"); the point in use, run l1n: #70 comment 6621931172; 5.15 %: #70 comment
+% 6629418159 (commit 0efb7213); target under 5 %: #70 comment 6565739270.
+
+\FloatBarrier
+\subsection{Failures}
+\label{app:failures}
+
+\begin{center}\small
+\captionof{table}{The 4 of 720 inputs without a score, by cause.}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Cause & Inputs \\
+\midrule
+The GPU fit did not stop in 3000 iterations (subject 10, squats1, two cameras) & 2 \\
+Passed its job's time limit (subject 10, squats1, a third camera; subject 5, a drop jump) & 2 \\
+\midrule
+Total & 4 \\
+\bottomrule
+\end{tabular}
+\end{center}
+% moments-labval-2026-11-09.txt, section 3 (716 of 720: subject10_squats1 Cam1 and Cam4, the fit did not stop in 3000
+% steps; subject10_squats1_Cam3 and subject5_DJAsym3_Cam2, their job's time).
+\clearpage
+\section{Model and solver parameters}
+\label{app:parameters}
+\begin{center}\small
+\captionof{table}{The bone groups: each SOMA segment, the MyoFullBody bone that carries its rotation, and the bones
+the group covers. Every sided group exists on both sides; 7 middle and 7 sided groups make 21, of which 20 drive their
+frame bone.}
+\begin{tabular}{@{}lll@{}}
+\toprule
+SOMA segment & Frame bone & Bones in the group \\
+\midrule
+Hips & pelvis & pelvis, sacrum \\
+Spine1 & lumbar 4 & lumbar 5 and 4 \\
+Spine2 & lumbar 1 & lumbar 3 to 1 \\
+Chest & torso & torso, thorax, cervical spine \\
+Neck1 & neck & neck \\
+Neck2 & neck (drives nothing) & -- \\
+Head & head & head \\
+Shoulder & scapula & clavicle, scapula \\
+Arm & humerus & humerus \\
+ForeArm & ulna & ulna, radius \\
+Hand & lunate & carpals, metacarpals, phalanges \\
+Leg & femur & femur \\
+Shin & tibia & tibia \\
+Foot & calcaneus & talus, calcaneus \\
+ToeBase & toes & toes \\
+\bottomrule
+\end{tabular}
+\end{center}
+% score/stages/sim_body/inside/bone_groups/__init__.py (GROUPS; the shoulder's and arm's helper bodies of MoBL-ARMS
+% are left out of the list); Neck2 drives none: inside/fit/CLAUDE.md ("One segment drives one bone group").
+
+\begin{center}\small
+\captionof{table}{MOTOR's parameters in one place.}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Part & Parameter & Value \\
+\midrule
+Model & muscles, bones, joints & 416, 86, 132 \\
+ & joints: root, coupled, free & 1, 36, 95 \\
+Landmarks & defined, used by the fit & 102, 84 \\
+Fit & markers' goal $\lambda_m$ & 2.1169 \\
+ & skin goal $\lambda_s$ & $10^3$ \\
+ & most steps per frame & 300 \\
+Level 1 & segment end's reach & 40\,mm \\
+ & held-out rule & check bodies within 10\% of tuning bodies \\
+Level 2 & sampled frames & about 30 \\
+ & landmark's and inside joint's reach & 3\,cm \\
+Forces & contact gap & 5\,mm \\
+ & a seen standing foot pushed up to & 5\,cm over the floor \\
+ & ground share weight, rounds & 0.03 per newton, 2 \\
+ & smoothing cut-off & 6\,Hz \\
+ & residual reduction: rounds & 3 \\
+ & \quad per-frame cap & 5\dg{} per segment, 2\,cm at the pelvis \\
+ & \quad mass change & at most 2\% \\
+ & residual limits & 2\% body weight; 1\% weight $\times$ centre of mass height \\
+\bottomrule
+\end{tabular}
+\end{center}
+% Model: paper/motor/evidence/model-2026-11-06.txt; landmarks: inside/landmarks/CLAUDE.md; fit: inside/fit/_frames.py
+% (MARKER_GOAL, MOST_STEPS), inside/fit/_skin.py (SKIN_GOAL); level 1: inside/tuning/CLAUDE.md (END_REACH), #70
+% comment 6556935195; level 2: inside/fit/__init__.py SAMPLE, inside/fit/_constants.py MARK_MOST; forces:
+% inside/contact/__init__.py (GAP, STANCE_HIGH), inside/muscles/__init__.py (SHARE_COST, SHARE_ROUNDS),
+% inside/solvers/__init__.py CUTOFF, inside/rra/__init__.py (RRA_ROUNDS, MASS_MOST), _gates.py (FOLLOWED,
+% MOVE_MOST); limits: score/stages/sim_body/CLAUDE.md.
+
+\section{Disclosure, data and code}
+\label{sec:availability}
+
+The code of MOTOR and of its validation was written by a coding agent (Claude Code) under the author's direction and
+review; this draft was written the same way. No result was hand-picked. The only settings chosen on LabValidation
+(MOTOR's contact gap, the height from which a seen standing foot is pushed, the weight that shares the ground force
+over the touching points, and the clearance of a drop jump's box) were chosen on subjects 2 to 5 against their force
+plates, never against joint angles; subjects 7 to 11 were never used to choose any setting. Of these, only the
+standing foot's height changed from its first value, from 30 to 50\,mm.
+% labval-final-2026-11-07.txt ("tuning": arms A to E on 36 Cam1 trials of subjects 2-5, C chosen, commit a40b66d6;
+% the box's 0.10 m clearance, commit 11edb366; header: "Held out: subjects 7 to 11 were never used to choose any
+% setting").
+
+MOTOR, its validation tools and this paper's sources are open under the MIT licence at
+\url{https://github.com/Babon-Innovations-b-v/score}; every number in this paper is read from a file or record named in
+a comment beside it in the paper's source. We collected no new data from people. LabValidation is the public release
+of OpenCap's authors \cite{uhlrich2023opencap}, used under its Apache-2.0 licence and fetched on demand, never
+redistributed.
+% LabValidation licence: #57 comment 6441121325 (Apache-2.0, fetched on demand, never committed); MIT: LICENSE.
+
+\end{document}

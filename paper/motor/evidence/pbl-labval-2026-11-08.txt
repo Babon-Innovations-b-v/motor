@@ -1,0 +1,131 @@
+PBL (the Portable Biomechanics Laboratory; Peiffer, Cotton et al. 2025, arXiv:2507.08268) on OpenCap LabValidation, single camera, scored with tools/labval's own scorer: MOTOR's baseline beside OpenCap (#98), 2026-11-08.
+Code: IntelligentSensingAndRehabilitation/MonocularBiomechanics at 118de08f (AGPL-3.0), fetched pinned and installed from its own uv.lock (JAX 0.10.1 CUDA 12, MuJoCo MJX 3.9.0, TensorFlow 2.21.0; opencv-python swapped for opencv-python-headless 4.13.0.92), MeTRAbs metrabs_eff2l_y4_384px_800k_28ds (its load_metrabs model, bml_movi_87; models non-commercial: a research baseline), model humanoid_torque.xml (LocoMuJoCo, MIT). SCORE side: tools/labval/pbl (pbl_env.sh, on_pbl.py, cluster.py, score.py).
+Pipeline as released (main.py): MeTRAbs on every frame of the 60 fps video at its defaults, then PBL's static-camera fit (fit_model, lr 1e-3, 10,000 steps, its defaults), the trajectory read at every frame. Given: each video's camera as the chain's own (GEM-X's K at MoGe-2's field of view; the demo's default is a Samsung S20's), the largest MeTRAbs detection a frame, confidence 0 on a frame with none. Never the lab's calibration.
+Pelvis: PBL's static fit has no gravity (its world is the camera), so its pelvis turn is levelled on the floor MoGe-2 sees in that video (the chain's own floor, tools/labval/_floor.seen), its heading put on the lab's as the chain's is; "camera up" (the camera's -y as up) beside it.
+Run: 720 single-camera inputs (144 non-static trials x 5 cameras), 48 jobs of 15 videos on the cluster's L4 cards, 3 PBL processes side by side a card (a fit step takes 9 ms at 95 or 480 frames: one fit leaves the card mostly idle), up to 33 cards at once beside MOTOR's runs, 140 min, 1355 node minutes, EUR 17.83 (run pbl-labval-2); 2 of the 720 from the smoke run (pbl-smoke-3, EUR 0.12). Before it: pbl-smoke-1 (TensorFlow saw no card: libcusolver not on its path), pbl-smoke-2 (MuJoCo's EGL), pbl-labval-1 (a lane's later videos failed until main.py's clear_caches was done before each fit), stopped. Spend under override pbl-labval-20261108 (EUR 30): EUR 22.66 in all, EUR 4.66 of it the two stopped runs booked by hand from what was watched (their submitter was killed before it booked).
+Scorer: tools/labval as on main (unchanged; tools/labval/pbl/score.py maps and calls it: the time shift on the legs' flexions, overlap 0.5, the per-subject bootstrap of 20,000 draws), the same labval.angle_scores and pooled_angles as the chain's labval-final-2026-11-07.txt, whose report.json is scored beside it here (its 5.16 / 3.06 reproduced).
+Coverage: all 720 of 720 inputs ran and scored (none failed); 15 videos had frames MeTRAbs found no person on (80 frames of them in all, at most 33 of 803 on subject4_squatsAsym1_Cam2), which PBL's fit takes at confidence 0. The chain's report has 715 (its 5 failures): "trials both have" compares the two on the same trials.
+mtp_angle: the lab's model welds the MTP (LaiArnoldModified2017_..._weldMTP), its IK holds about -5 deg throughout; PBL's MTP is free, so its 26 to 28 deg MAE is the two models' different foot, not a tracking error. Not in the matched 15.
+OpenCap Monocular's 4.8 is its paper's own number on its own set, not rescored here.
+
+Scored: 720 PBL results, 720 on the seen floor, 720 on the camera's up; not scored on the floor: 0
+
+## matched envelope (Cam1, no drop jumps; the 15 coordinates of labval.MATCHED)
+                                             trials subjects   matched MAE deg         matched cMAE deg        
+PBL, seen floor                                  90        9   5.65 [5.26, 6.05]       2.96 [2.77, 3.16]       
+PBL, camera up                                   90        9   5.56 [5.21, 5.94]       2.96 [2.77, 3.16]       
+chain (labval-final-2026-11-07), all its         89        9   5.16 [4.77, 5.59]       3.06 [2.86, 3.28]       
+PBL, seen floor, trials both have                89        9   5.65 [5.25, 6.05]       2.96 [2.77, 3.16]       
+chain, trials both have                          89        9   5.16 [4.77, 5.59]       3.06 [2.86, 3.28]       
+OpenCap Monocular (Gilon et al. 2026, arXiv:2603.24733, as the paper cites it): 4.8 deg MAE on its matched set.
+
+## every camera and activity
+                                             trials subjects   matched MAE deg         matched cMAE deg        
+PBL, seen floor                                 720        9   5.59 [5.28, 5.97]       3.11 [2.96, 3.27]       
+PBL, camera up                                  720        9   5.54 [5.26, 5.91]       3.11 [2.96, 3.27]       
+chain, all its                                  715        9   5.35 [4.94, 5.81]       3.25 [3.06, 3.44]       
+PBL, seen floor, trials both have               715        9   5.58 [5.27, 5.97]       3.11 [2.96, 3.27]       
+chain, trials both have                         715        9   5.35 [4.94, 5.81]       3.25 [3.06, 3.44]       
+
+## each coordinate, matched envelope (* matched; † the reference's range under 15 deg)
+coordinate                     PBL MAE   cMAE      r       chain MAE   cMAE      r
+ankle_angle_l *                   7.56   3.31   0.87            4.61   3.32   0.89
+ankle_angle_r *                   8.07   3.67   0.83            6.39   3.19   0.89
+arm_add_l                         4.43   2.35   0.66            3.98   2.34   0.70
+arm_add_r                         5.90   2.07  0.56†            4.23   2.23  0.51†
+arm_flex_l                        4.57   3.12   0.92            8.03   3.19   0.93
+arm_flex_r                        6.24   3.04   0.93            7.00   3.19   0.93
+arm_rot_l                         8.09   3.44   0.74            8.01   4.50   0.64
+arm_rot_r                         9.07   4.13   0.69            7.03   4.09   0.67
+elbow_flex_l                     12.96   4.49   0.78           23.68   4.61   0.74
+elbow_flex_r                     13.21   3.14   0.78           21.12   3.00   0.80
+hip_adduction_l *                 3.60   2.16  0.76†            4.72   2.76  0.60†
+hip_adduction_r *                 5.79   2.13  0.69†            4.20   2.73  0.52†
+hip_flexion_l *                   6.54   3.15   0.98            7.37   3.53   0.98
+hip_flexion_r *                   6.32   3.47   0.98            8.03   3.82   0.98
+hip_rotation_l *                  6.45   3.00  0.45†            4.41   3.06  0.43†
+hip_rotation_r *                  7.56   3.84  0.30†            4.07   2.62  0.43†
+knee_angle_l *                    5.48   4.18   0.97            5.94   3.24   0.98
+knee_angle_r *                    5.24   3.52   0.99            6.06   3.04   0.99
+lumbar_bending *                  3.64   2.22   0.65            4.19   3.21   0.44
+lumbar_extension *                4.60   2.89   0.58            4.56   3.11   0.64
+lumbar_rotation *                 4.03   2.16  0.64†            3.67   2.12  0.58†
+mtp_angle_l                      27.70   5.56 -0.06†           15.35   2.47  0.15†
+mtp_angle_r                      26.02   3.69  0.12†           15.22   2.55 -0.02†
+pelvis_list *                     2.52   1.63  0.53†            3.15   2.46  0.17†
+pelvis_rotation                   2.47   2.34  0.60†            2.70   2.57  0.50†
+pelvis_tilt *                     7.35   3.10   0.45            6.06   3.64   0.51
+pro_sup_l                            -   4.04  0.14†               -   2.82  0.16†
+pro_sup_r                            -   3.39  0.06†               -   2.55  0.18†
+subtalar_angle_l                  8.62   5.40   0.46            9.24   6.88  -0.21
+subtalar_angle_r                 10.29   4.28   0.61            9.16   6.26   0.04
+
+## each coordinate, every camera and activity
+coordinate                     PBL MAE   cMAE      r       chain MAE   cMAE      r
+ankle_angle_l *                   7.19   3.91   0.90            5.51   3.75   0.92
+ankle_angle_r *                   7.31   4.06   0.90            5.96   3.92   0.92
+arm_add_l                         6.45   5.08   0.71            6.58   5.12   0.70
+arm_add_r                         9.26   7.15   0.63            6.16   4.40   0.64
+arm_flex_l                        9.23   7.72   0.90           12.46   8.59   0.90
+arm_flex_r                       12.36  10.82   0.84           11.20   8.52   0.90
+arm_rot_l                        12.47   8.95   0.71           12.35   9.78   0.67
+arm_rot_r                        14.25  10.86   0.64           11.18   8.61   0.68
+elbow_flex_l                     15.07   5.77   0.79           24.70   5.67   0.79
+elbow_flex_r                     14.54   5.52   0.77           22.74   5.76   0.76
+hip_adduction_l *                 4.03   2.27  0.64†            3.52   2.52  0.57†
+hip_adduction_r *                 5.43   2.46  0.55†            3.72   2.59  0.52†
+hip_flexion_l *                   7.04   3.73   0.98            8.93   4.17   0.98
+hip_flexion_r *                   6.65   3.61   0.99            8.89   4.11   0.98
+hip_rotation_l *                  6.05   2.92   0.61            4.20   3.00   0.54
+hip_rotation_r *                  6.36   3.55   0.44            4.36   2.77   0.51
+knee_angle_l *                    5.05   3.64   0.98            6.09   3.50   0.98
+knee_angle_r *                    5.18   3.37   0.99            5.99   3.17   0.99
+lumbar_bending *                  3.61   2.21  0.50†            3.69   2.54  0.45†
+lumbar_extension *                5.40   3.31   0.72            5.32   3.35   0.75
+lumbar_rotation *                 4.29   2.84   0.50            3.97   2.71   0.44
+mtp_angle_l                      27.48   6.40 -0.12†           15.74   2.19  0.10†
+mtp_angle_r                      26.86   6.47  0.01†           14.99   2.06  0.00†
+pelvis_list *                     2.69   1.67  0.41†            3.11   2.24  0.16†
+pelvis_rotation                   2.52   2.33  0.59†            2.63   2.42  0.48†
+pelvis_tilt *                     7.49   3.08   0.53            7.02   4.39   0.40
+pro_sup_l                            -   5.21   0.23               -   3.61   0.25
+pro_sup_r                            -   5.18  0.19†               -   3.46  0.26†
+subtalar_angle_l                  8.96   4.69   0.45            9.73   6.25  -0.07
+subtalar_angle_r                 11.31   4.98   0.43           11.39   6.21   0.04
+
+## mapping (tools/labval/pbl/score.py)
+  hip_flexion_r <- PBL hip_flexion_r
+  hip_adduction_r <- PBL hip_adduction_r
+  hip_rotation_r <- PBL hip_rotation_r
+  ankle_angle_r <- PBL ankle_angle_r
+  subtalar_angle_r <- PBL subtalar_angle_r
+  mtp_angle_r <- PBL mtp_angle_r
+  arm_flex_r <- PBL arm_flex_r
+  arm_add_r <- PBL arm_add_r
+  arm_rot_r <- PBL arm_rot_r
+  elbow_flex_r <- PBL elbow_flex_r
+  pro_sup_r <- PBL pro_sup_r
+  hip_flexion_l <- PBL hip_flexion_l
+  hip_adduction_l <- PBL hip_adduction_l
+  hip_rotation_l <- PBL hip_rotation_l
+  ankle_angle_l <- PBL ankle_angle_l
+  subtalar_angle_l <- PBL subtalar_angle_l
+  mtp_angle_l <- PBL mtp_angle_l
+  arm_flex_l <- PBL arm_flex_l
+  arm_add_l <- PBL arm_add_l
+  arm_rot_l <- PBL arm_rot_l
+  elbow_flex_l <- PBL elbow_flex_l
+  pro_sup_l <- PBL pro_sup_l
+  knee_angle_r <- PBL knee_angle_r (negated)
+  knee_angle_l <- PBL knee_angle_l (negated)
+  lumbar_extension <- PBL lumbar_extension
+  lumbar_bending <- PBL lumbar_bending
+  lumbar_rotation <- PBL lumbar_rotation
+  pelvis_tilt, pelvis_list, pelvis_rotation <- PBL's pelvis body turn in the camera, levelled on the seen floor, heading on the lab's, intrinsic ZXY
+  pro_sup_r, pro_sup_l: cMAE and r only (their zero not shown to be the lab's)
+not mapped:
+  knee_angle_r_beta: the patella's coupled coordinate; PBL's knee has none
+  knee_angle_l_beta: the patella's coupled coordinate; PBL's knee has none
+  wrist_flex_r/l, wrist_dev_r/l (PBL): the lab's hands are welded: no wrist in its IK
+  neck_extension, neck_bending, neck_rotation (PBL): the lab's model has no neck coordinate
+  pelvis_tx, pelvis_ty, pelvis_tz: PBL's are in the camera's frame; translations are not scored

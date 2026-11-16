@@ -1,0 +1,108 @@
+MOTOR on OpenCap LabValidation, 2026-11-07 (issue #98). GEM-X at MoGe-2's field of view, seen floor, Contact/IK, levelled feet.
+Runs: measure-fov-all (630 inputs: Cam0, Cam2-4 all trials, Cam1 drop jumps) and measure-fov-cam1 (73 Cam1 non-drop-jump inputs),
+on rented L4/L40S cards. Scored with tools/labval (time shift, overlap 0.5, per-subject bootstrap of 20,000 draws).
+"base" = the previous scoring (measure-all, wrong-video trials out); "new" = this run. Tables compare the trials both have.
+
+
+## matched envelope (Cam1, no drop jumps): 57 trials, 9 subjects
+DOF                MAE base    new cMAE base    new
+ankle_angle_r         12.00   6.59      3.21   3.09
+ankle_angle_l          7.84   4.52      3.32   3.32
+knee_angle_r           6.87   6.52      3.49   3.19
+knee_angle_l           5.98   5.98      3.40   3.24
+hip_flexion_r          8.92   8.32      4.01   3.97
+hip_flexion_l          8.28   7.47      3.64   3.61
+hip_adduction_r        4.36   4.00      2.51   2.66
+hip_adduction_l        4.51   4.59      3.03   2.67
+hip_rotation_r         4.13   4.01      2.65   2.52
+hip_rotation_l         4.48   4.47      3.07   3.04
+pelvis_tilt            6.40   6.11      3.66   3.71
+pelvis_list            2.95   3.18      2.29   2.38
+lumbar_extension       4.74   4.64      3.16   3.17
+lumbar_bending         4.18   4.26      3.05   3.23
+lumbar_rotation        3.82   3.86      2.10   2.13
+matched MAE        5.96 (5.49-6.54) -> 5.23 (4.83-5.73)
+   sit-to-stand           n  11 matched MAE 7.37 -> 6.10
+   squats                 n  11 matched MAE 7.16 -> 6.48
+   walking                n  16 matched MAE 5.11 -> 4.54
+   walking (trunk sway)   n  19 matched MAE 5.18 -> 4.59
+
+## all cameras, no drop jumps: 310 trials, 9 subjects
+DOF                MAE base    new cMAE base    new
+ankle_angle_r          9.28   5.17      3.50   3.18
+ankle_angle_l          8.51   4.52      3.37   3.19
+knee_angle_r           6.29   6.34      3.14   2.95
+knee_angle_l           6.55   6.42      3.62   3.38
+hip_flexion_r          8.30   7.78      3.48   3.49
+hip_flexion_l          7.61   7.03      3.42   3.38
+hip_adduction_r        4.19   3.89      2.91   2.89
+hip_adduction_l        3.78   3.81      2.81   2.69
+hip_rotation_r         3.86   3.75      2.81   2.71
+hip_rotation_l         4.35   4.33      2.89   2.91
+pelvis_tilt            6.32   5.60      3.50   3.52
+pelvis_list            3.13   3.55      2.49   2.55
+lumbar_extension       4.62   4.57      2.89   2.89
+lumbar_bending         3.97   4.16      3.01   3.15
+lumbar_rotation        3.53   3.57      2.19   2.20
+matched MAE        5.62 (5.24-6.06) -> 4.97 (4.61-5.38)
+   sit-to-stand           n  53 matched MAE 6.70 -> 5.64
+   squats                 n  52 matched MAE 6.57 -> 6.01
+   walking                n  97 matched MAE 4.93 -> 4.40
+   walking (trunk sway)   n 108 matched MAE 5.24 -> 4.64
+
+## all cameras, all activities: 461 trials, 9 subjects
+DOF                MAE base    new cMAE base    new
+ankle_angle_r          9.34   5.91      3.76   3.84
+ankle_angle_l          8.56   5.40      3.63   3.65
+knee_angle_r           6.19   6.16      3.37   3.18
+knee_angle_l           6.37   6.20      3.68   3.50
+hip_flexion_r          8.95   8.60      3.92   3.95
+hip_flexion_l          8.92   8.47      3.93   3.96
+hip_adduction_r        4.07   3.77      2.70   2.70
+hip_adduction_l        3.65   3.60      2.74   2.59
+hip_rotation_r         4.34   4.27      2.85   2.77
+hip_rotation_l         4.31   4.28      3.01   3.01
+pelvis_tilt            7.61   6.82      4.05   4.21
+pelvis_list            2.94   3.17      2.31   2.29
+lumbar_extension       5.07   5.08      3.17   3.14
+lumbar_bending         3.78   3.84      2.61   2.70
+lumbar_rotation        4.01   4.07      2.66   2.68
+matched MAE        5.87 (5.49-6.31) -> 5.31 (4.91-5.79)
+   drop jump              n 151 matched MAE 6.39 -> 6.02
+   sit-to-stand           n  53 matched MAE 6.70 -> 5.64
+   squats                 n  52 matched MAE 6.57 -> 6.01
+   walking                n  97 matched MAE 4.93 -> 4.40
+   walking (trunk sway)   n 108 matched MAE 5.24 -> 4.64
+
+## forces, all cameras (median over trials; r with no contact as 0)
+   drop jump              n 151 | base RMSE 55,45 r 0.00,0.00 residual pass 0.00 | new RMSE 48,42 r 0.41,0.21 residual pass 0.00
+   sit-to-stand           n  53 | base RMSE 42,43 r 0.04,0.00 residual pass 0.00 | new RMSE 45,49 r 0.04,0.00 residual pass 0.00
+   squats                 n  52 | base RMSE 60,45 r -0.03,-0.03 residual pass 0.00 | new RMSE 50,44 r 0.01,0.03 residual pass 0.00
+   walking                n  97 | base RMSE 63,61 r 0.20,0.00 residual pass 0.00 | new RMSE 64,64 r 0.23,0.00 residual pass 0.00
+   walking (trunk sway)   n 108 | base RMSE 59,67 r 0.12,0.00 residual pass 0.00 | new RMSE 63,69 r 0.00,0.00 residual pass 0.00
+
+## pooled over every scored trial of this run (score-fov-current.json, mean and 95% CI)
+   all                    n 583 matched MAE 5.28 (4.89-5.74) residual pass 0.00
+   drop jump              n 198 matched MAE 5.94 (5.32-6.70) residual pass 0.00
+   sit-to-stand           n  64 matched MAE 5.55 (4.94-6.18) residual pass 0.00
+   squats                 n  72 matched MAE 5.81 (5.21-6.47) residual pass 0.00
+   walking                n 123 matched MAE 4.39 (3.92-4.91) residual pass 0.00
+   walking (trunk sway)   n 126 matched MAE 4.65 (4.27-5.16) residual pass 0.00
+   force right vertical  RMSE %bw 54.2 (52.5-55.9) peak error %bw 47.9 (42.3-52.1) pooled r 0.31
+   force right anterior  RMSE %bw 7.7 (7.3-8.1) peak error %bw 12.5 (11.4-13.6) pooled r 0.29
+   force left vertical   RMSE %bw 52.2 (50.6-53.8) peak error %bw 66.2 (60.5-73.1) pooled r 0.21
+   force left anterior   RMSE %bw 6.5 (6.1-6.9) peak error %bw 13.3 (12.1-14.5) pooled r 0.22
+   knee adduction right peak error %bw.ht 1.6 (1.3-1.8) n 173
+   knee adduction right rmse %bw.ht      1.8 (1.6-2.0) n 173
+   knee adduction left peak error %bw.ht 2.5 (2.2-2.8) n 122
+   knee adduction left rmse %bw.ht       2.4 (2.2-2.6) n 122
+
+## failures: measure-fov-all, 108 of 630 trials without out.json
+   36  job hit its 20-minute cap (6 jobs x 6 trials: 19342533961903, 11649670001977, 228858973778880, 93251946440615, 226277931258557, 85162220557368)
+   56  fit._frames.NotConverged: a frame's fit did not converge in 300 steps
+    6  fit._card._solve.NotConverged: 1 rows did not stop in 300 steps (subject10_squats1 Cam0,3,4; subject2_DJ3_Cam0; subject2_squats1_Cam0; subject4_walking2_Cam4)
+    9  ValueError: the adjusted path is still N times its per-frame cap, bones put out of the skin
+    1  ValueError: Newton's bodies N mm off MuJoCo's: the card's model is not the file's
+## failures: measure-fov-cam1, 12 of 73 trials without a run
+   1 job hit its 17.5-minute cap (190064507339003); per-trial causes not yet broken down
+## not run in this round: 17 of the 144 Cam1 inputs (neither measure-fov-all nor measure-fov-cam1 holds them)
