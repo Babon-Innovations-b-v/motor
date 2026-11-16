@@ -78,6 +78,11 @@ force plates and EMG). That pipeline still lives in [SCORE](https://github.com/B
 
 ## Citation
 
+Demo clips of the trials the paper shows (input body, MyoFullBody with its muscle activations, vertical GRF):
+[`paper/motor/demos`](paper/motor/demos).
+
+![MOTOR on a squat](paper/motor/demos/motor-squat-subject2.gif)
+
 The paper is a working draft, not yet published (its source is [`paper/motor`](paper/motor)):
 
 > J.P. Kardolus. MOTOR: Musculoskeletal Optimisation Through Open Robotics Simulation. Working draft, 2026.

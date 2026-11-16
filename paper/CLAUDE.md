@@ -21,6 +21,12 @@ its path so its build line and evidence paths read the same. Its `#N` and commen
   4. Method detail and full tables go to the appendices. MOTOR is the per-frame solver: its results are the run of
   `evidence/labval-final-2026-11-07.txt`; the whole-trial solve is future work, its numbers from
   `evidence/motor-labval-2026-11-09.txt`. OpenCap's numbers are its published ones; PBL is not rerun (licence).
+- `motor/figures/demo/`: the demo clips (owner, 2026-11-16), one video a trial the paper shows (the teaser's
+  subject2_squats1_Cam1, the figures' median walking and squat trials subject3_walking3_Cam1 and
+  subject8_squatsAsym1_Cam1), three panels stacked in time: the input body, MyoFullBody in its skin with the
+  activation colour bar, the vertical GRF with a moving marker. `prepare.py` with every frame, then Blender's
+  `render_clip.py` (the teaser's look, one fixed camera over the clip), then `compose_clip.py` (H.264, 1080 x 1920).
+  The videos (MP4, and a 6 s GIF each) are `motor/demos/`, made 2026-11-16 from the 2026-11-07 run on this PC's card.
 
 ## Rules
 
