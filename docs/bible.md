@@ -31,10 +31,9 @@ biomechanics gets physical AI's scale.
 physical-AI body and the scene's ground; the row wiring SCORE's graph needs stays in SCORE as a thin stage. MOTOR knows
 nothing of SCORE: no store, no rows, no spend.
 
-**State (2026-11-08).** The repository holds the shared harness, the rules and the empty `motor/` package. The solver
-(SCORE's `score/stages/sim_body`), its validation (`tools/labval`) and its paper (`paper/motor`) move here with their
-history in the same release as the whole-trial solver enters SCORE's sim body stage (SCORE #101), because that release
-re-keys SCORE's sim-body rows anyway.
+**State (2026-11-16).** The solver is in `motor/` (from SCORE ae0f57ed6) and the paper in `paper/motor` (from SCORE
+8d34af91, with its history). The validation (`tools/labval`) is still SCORE's; it moves here in the release where the
+whole-trial solver enters SCORE's sim body stage (SCORE #101), because that release re-keys SCORE's sim-body rows anyway.
 
 ## architecture/solver
 
@@ -97,7 +96,8 @@ of a patient or participant enters this repository.
   at `TEST_SECONDS` (60); the whole suite stays inside `SUITE_SECONDS` (600). The push gate
   (`.claude/hooks/local/pre-push`) runs the guard and every touched module's test file on a push to main. A test that
   needs a GPU is named in the guard's `MAY_SKIP` with that reason and runs where there is a card.
-- **Releases**: none yet. A push to main publishes the source and, once it is here, the paper.
+- **Releases**: none yet. A push to main publishes the source and the paper (`paper/motor`, moved in from SCORE with
+  its history on 2026-11-16).
 
 **The move from SCORE (SCORE #101).** In the release where the whole-trial solver enters SCORE's sim body stage:
 

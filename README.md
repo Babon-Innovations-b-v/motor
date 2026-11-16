@@ -78,7 +78,7 @@ force plates and EMG). That pipeline still lives in [SCORE](https://github.com/B
 
 ## Citation
 
-The paper is a working draft, not yet published (its source is in SCORE, `paper/motor`):
+The paper is a working draft, not yet published (its source is [`paper/motor`](paper/motor)):
 
 > J.P. Kardolus. MOTOR: Musculoskeletal Optimisation Through Open Robotics Simulation. Working draft, 2026.
 
