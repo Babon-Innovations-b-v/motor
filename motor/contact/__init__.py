@@ -12,14 +12,29 @@ from motor.model import TO_OWN, own_pose
 # The ground pushes only a skin point touching it: within GAP of its drawn triangle or into it, the same 5 mm the
 # stage's `lands` gate takes a landed foot within (`_gates.LANDED`).
 GAP = 0.005  # metres
-# A foot the video shows standing (the job's seen stance: a video estimator's static contact or the caller's own
-# stance on the clip) is pushed from its own lowest skin point, up to STANCE_HIGH over
-# its ground: the video's feet stand a few millimetres to centimetres off the floor where its legs' lengths and the
-# foot's shape miss (#98, 2026-11-07: a deep squat's sole stood centimetres up while the estimator held it static, so only
-# the other foot was pushed). A foot higher than that, or not seen standing, is pushed only
-# within GAP as any skin is; nothing moves the body. STANCE_HIGH tuned against force plates (never on reference angles): 30, 50 and 80 mm
-# tried, 50 the best; GAP 10 mm and the balance's SHARE_COST 0.1 no better.
-STANCE_HIGH = 0.05  # metres
+# Each foot's contact is MOTOR's own (#1, 2026-11-17: GEM-X's static flag came 3 to 4 frames late at heel strike,
+# 41 % of the walking and drop jumps' GRF error): its lowest skin point over a floor fitted per trial and foot (the
+# FLOOR_SHARE quantile of its heights on its slow frames, the video's feet standing millimetres to centimetres up)
+# and its speed (the slower of its bodies' origins), with hysteresis: it comes into contact under TOUCH_HIGH and
+# TOUCH_FAST and leaves over LEAVE_HIGH or LEAVE_FAST (`feet_touching`). Tuned against the force plates' loaded frames
+# (never reference angles) on LabValidation's subjects 2 to 5, 319 trials: missed and false frames (summed over the
+# four motions' shares) 0.40 with GEM-X's flag, 0.32 so; on the held-out subjects 6 to 11, 0.48 and 0.38.
+TOUCH_HIGH, LEAVE_HIGH = 0.06, 0.07  # metres over the fitted floor
+TOUCH_FAST, LEAVE_FAST = 1.0, 1.2  # m/s
+FLOOR_SHARE = 0.5
+RISING = 0.1  # m/s up
+DEEP = 0.03  # metres under the fitted floor
+# A foot falling onto its floor touches at any speed once at or under it, and stays while under it for FALLEN frames
+# or while not rising past RISING (#1, 2026-11-17: drop-jump landings came 1 to 3 frames late, the foot 5 to 30 mm
+# into its floor at 1 to 2 m/s, the plates already carrying 100 to 200 %BW): its lowest point under LANDED over the
+# floor, having fallen faster than FALLING within FALLEN frames. Held under its floor however it moved, a walking foot
+# lifting off (rising 0.3 to 0.6 m/s from 5 to 30 mm under its floor) stayed 1 to 3 frames past its push-off on 11 of
+# 18 held-out walking trials and their vertical GRF MAE rose 1 to 4 %BW each.
+LANDED = 0.0  # metres over the fitted floor
+FALLING, FALLEN = 0.6, 3  # m/s down, frames
+# A foot not in contact is pushed from AWAY under its points, so none of them is; one in contact from its lowest
+# point, its sole laid on its ground there whether over it or into it (no toes pushed from inside the floor).
+AWAY = -1.0  # metres
 REGISTERED_FRAMES = 60  # frames spread over a clip that lay each segment's skin on SOMA's (`Skin.registered`)
 SLIDE_MOST = 1.2  # m/s
 FRICTION = 0.5
@@ -31,12 +46,13 @@ class Skin:
     it touches carries it as a floor carries a foot (2026-11-01: MyoFullBody's colliders stood 16 to 27 mm inside a
     seated astronaut's skin, which sat 10 mm into its floor, so nothing carried his weight)."""
 
-    def __init__(self, points, weights, binds, bodies, riding):
+    def __init__(self, points, weights, binds, bodies, riding, faces=None):
         """`points` the skin at its bind (v x 3, the person's frame), `weights` each point's share per segment (v x
         segments), `binds` each segment's frame at the bind standing where `riding` stands it, its group's start
         (segments x 4 x 4: `landmarks.at_starts`), `bodies` the body each segment rides and `riding` its frame on
-        that body (segments x 4 x 4)."""
+        that body (segments x 4 x 4); `faces` the skin's triangles (f x 3), from which each point's `areas`."""
         self.points, self.weights = np.asarray(points, float), np.asarray(weights, float)
+        self.areas = point_areas(self.points, faces)
         self.unbound = np.linalg.inv(np.asarray(binds, float))
         self.bodies, self.riding = list(bodies), np.asarray(riding, float)
         self.owners = np.asarray(self.bodies)[self.weights.argmax(axis=1)]  # the body a point's force is booked on
@@ -62,19 +78,18 @@ class Skin:
             given = np.tile(local, (len(frames), 1))
             riding[segment] = riding[segment] @ kabsch(given, wanted)
         found = Skin(self.points, self.weights, np.linalg.inv(self.unbound), self.bodies, riding)
-        found.credit = self.credit
+        found.credit, found.areas = self.credit, self.areas
         return found
 
-    def credited(self, lowest, stance, feet):
-        """This skin's `credit` set: on each frame a foot is seen standing (`stance`, frames x feet) and its lowest
-        point stands within STANCE_HIGH over its ground (`lowest`, frames x feet, m, nan where none), each point it
-        carries most (`feet`, each foot's bodies) is pushed from that height, as if the ground stood at its sole."""
-        credit = np.zeros((len(stance), len(self.points)))
+    def credited(self, lowest, touching, feet):
+        """This skin's `credit` set: on each frame a foot touches (`touching`, frames x feet, `feet_touching`), each
+        point it carries most (`feet`, each foot's bodies) is pushed from its lowest point's height (`lowest`, frames x
+        feet, m), as if the ground stood at its sole; on the others from AWAY, so none of them is pushed."""
+        credit = np.zeros((len(touching), len(self.points)))
         for foot, bodies in enumerate(feet):
             mine = np.isin(self.owners, list(bodies))
-            lifted = np.where(np.asarray(stance)[:, foot] & (np.nan_to_num(lowest[:, foot], nan=np.inf) <= STANCE_HIGH),
-                              np.clip(np.nan_to_num(lowest[:, foot]), 0.0, STANCE_HIGH), 0.0)
-            credit[:, mine] = lifted[:, None]
+            touches = np.asarray(touching)[:, foot] & np.isfinite(lowest[:, foot])
+            credit[:, mine] = np.where(touches, np.nan_to_num(lowest[:, foot]), AWAY)[:, None]
         self.credit = credit
 
     def credit_of(self, count):
@@ -103,6 +118,55 @@ class Skin:
             mujoco.mj_jac(model, data, along, None, TO_OWN.T @ carried[point, segment], self.bodies[segment])
             found += self.weights[point, segment] * along
         return found
+
+
+def point_areas(points, faces):
+    """Each skin point's share of the skin's area (a third of each triangle's it is a corner of), over their mean, so
+    a point pushes as much of the ground as its area does (#1, 2026-11-17: SOMA's low mesh has 127 points under a
+    sole's toes, 0.6 cm2 each, and 17 under its heel and midfoot, 7 cm2 each, and the least squares that shares the
+    load gave it by points); all one without `faces`."""
+    if faces is None or not len(points):
+        return np.ones(len(points))
+    faces = np.asarray(faces, int)
+    corners = np.asarray(points, float)[faces]
+    third = np.linalg.norm(np.cross(corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0]), axis=1) / 6.0
+    found = np.bincount(faces.ravel(), np.repeat(third, 3), len(points))
+    return found / found.mean()
+
+
+def feet_touching(lowest, speed, rate):
+    """Which foot touches its ground each frame (frames x feet, bool), from its lowest skin point's height over its
+    ground (`lowest`, frames x feet, m, nan off any) and its speed (`speed`, frames x feet, m/s), `rate` frames a
+    second: its floor fitted as the FLOOR_SHARE quantile of its heights on its slow frames (under TOUCH_FAST; all of
+    them when fewer than three), then a foot comes into contact under TOUCH_HIGH over it and TOUCH_FAST while its
+    lowest point rises slower than RISING, or at any speed DEEP under it or under LANDED having fallen faster than
+    FALLING within FALLEN frames, and leaves over LEAVE_HIGH, or over LEAVE_FAST unless DEEP or under LANDED either
+    within FALLEN frames of touching or rising slower than RISING."""
+    lowest, speed = np.asarray(lowest, float), np.asarray(speed, float)
+    found = np.zeros(lowest.shape, dtype=bool)
+    for foot in range(lowest.shape[1]):
+        heights = np.where(np.isfinite(lowest[:, foot]), lowest[:, foot], np.inf)
+        slow = (speed[:, foot] < TOUCH_FAST) & np.isfinite(heights)
+        seen = heights[slow] if slow.sum() >= 3 else heights[np.isfinite(heights)]
+        if not len(seen):
+            continue
+        over = heights - np.quantile(seen, FLOOR_SHARE)
+        known = np.where(np.isfinite(heights), heights, 1.0)
+        rising = np.gradient(known) * rate if len(known) > 1 else np.zeros(len(known))
+        touching, since = False, 0
+        for frame in range(len(heights)):
+            deep, down = over[frame] < -DEEP, over[frame] < LANDED
+            if touching:
+                since += 1
+                held = down and (since < FALLEN or rising[frame] < RISING)
+                touching = not (over[frame] > LEAVE_HIGH or (speed[frame, foot] > LEAVE_FAST and not deep and not held))
+            else:
+                since = 0
+                landed = down and rising[max(0, frame - FALLEN):frame + 1].min() < -FALLING
+                touching = bool(deep or landed or (over[frame] < TOUCH_HIGH and speed[frame, foot] < TOUCH_FAST
+                                         and rising[frame] < RISING))
+            found[frame, foot] = touching
+    return found
 
 
 def kabsch(given, wanted):
@@ -222,7 +286,7 @@ def touching_all(model, states, ground, up, skin):
         local = np.searchsorted(touching, points[pairs])
         moving = np.zeros((len(touching), 3))
         np.add.at(moving, local, shares[pairs, None] * speed)
-        edges, counts = pyramids(up[every_triangle[state, touching]], moving, over[touching])
+        edges, counts = pyramids(up[every_triangle[state, touching]], moving, over[touching], skin.areas[touching])
         found.append((own[state, touching] @ TO_OWN, summed[touching], edges, counts))
     return found
 
@@ -278,8 +342,9 @@ def pushes(model, data, ground, up, skin, frame=0):
     with Coulomb's friction: a point slower than SLIDE_MOST sticks (a friction pyramid, FRICTION), a faster one slides
     (the normal and FRICTION of it against its slip); booked on the body its heaviest segment rides, acting at the
     ground straight under the point (its height there, `standing`: a seat's top under a seated body's skin). Each
-    point's directions are as long as it is near (`closeness`), so a point's push fades to nothing at GAP; a point of a
-    foot seen standing is measured from its credit on `frame` (`Skin.credited`)."""
+    point's directions are as long as it is near (`closeness`), so a point's push fades to nothing at GAP, times the
+    square root of its area (`Skin.areas`), so the least squares that shares a load gives each point its area's share;
+    a foot's point is measured from its credit on `frame` (`Skin.credited`)."""
     found = []
     carried = skin.by_segment(model, data)
     own = np.einsum("vs,vsi->vi", skin.weights, carried)
@@ -308,15 +373,17 @@ def pushed(skin, point, along, up, qvel, over, under):
         second = np.cross(normal, first)
         edges = [normal + FRICTION * first, normal - FRICTION * first, normal + FRICTION * second,
                  normal - FRICTION * second]
-    return skin.owners[point], along, [closeness(over) * edge for edge in edges], TO_OWN.T @ np.asarray(under, float)
+    reach = closeness(over) * np.sqrt(skin.areas[point])
+    return skin.owners[point], along, [reach * edge for edge in edges], TO_OWN.T @ np.asarray(under, float)
 
 
-def pyramids(ups, moving, overs):
+def pyramids(ups, moving, overs, areas=None):
     """Each touching point's push directions (points x 4 x 3, MuJoCo's frame) and how many of them it has (points),
     `pushed`'s rule for many points at once (the contact test holds the two equal): along its triangle's upward
     normal (`ups`, the person's frame) with Coulomb's friction, a point slower than SLIDE_MOST (`moving`, its speed,
     MuJoCo's frame) a friction pyramid (four), a faster one the normal and FRICTION of it against its slip (one, the
-    first), each as long as the point is near (`closeness` of its height `overs`)."""
+    first), each as long as the point is near (`closeness` of its height `overs`) times the square root of its area
+    (`areas`, `Skin.areas`; all one when not given)."""
     normals = ups @ TO_OWN  # TO_OWN.T applied to each normal
     slip = moving - np.einsum("ij,ij->i", moving, normals)[:, None] * normals
     slips = np.linalg.norm(slip, axis=1)
@@ -328,4 +395,5 @@ def pyramids(ups, moving, overs):
     edges = np.stack([normals + FRICTION * first, normals - FRICTION * first, normals + FRICTION * second,
                       normals - FRICTION * second], axis=1)
     edges[sliding, 0] = normals[sliding] - FRICTION * slip[sliding] / slips[sliding, None]
-    return edges * closeness(overs)[:, None, None], np.where(sliding, 1, 4)
+    reach = closeness(overs) * (1.0 if areas is None else np.sqrt(areas))
+    return edges * reach[:, None, None], np.where(sliding, 1, 4)

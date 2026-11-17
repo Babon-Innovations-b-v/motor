@@ -18,8 +18,18 @@ to 27 mm inside his skin, which sat 10 mm into his floor, so the floor carried 0
   turn and shift (Kabsch over its points and REGISTERED_FRAMES frames of the fitted path) that best lays its carried
   skin on SOMA's. Carried from MyoFullBody's ankle, a foot's skin stood 5 to 11 mm over SOMA's and turned 4 to 6
   degrees on video bodies; laid, within about 1 mm. Nothing moves the body: only where its skin rides its bones.
-- **A foot the video shows standing is pushed from its sole** (#98, `Skin.credited`, the job's targets' `stance`,
-  frames x 2: a video estimator's static contact or the caller's own stance): on those frames its points are measured
-  from its lowest point (at most STANCE_HIGH, 5 cm, tuned against force plates) instead of the ground, on `pushes`, `pushes_all` and
-  `touching_all` alike (a state's credit is its frame's, states being whole copies of the clip). A clip without a
-  stance is pushed as before.
+- **Each foot's contact is MOTOR's own** (#1, 2026-11-17, `feet_touching`, `Skin.credited`): from its lowest skin
+  point's height over a floor fitted per trial and foot (the median of its heights on its slow frames) and the slower
+  of its bodies' speeds, with hysteresis (in under TOUCH_HIGH and TOUCH_FAST while not rising past RISING, or at any
+  speed DEEP under the floor or under LANDED having fallen faster than FALLING within FALLEN frames, a drop jump's
+  landing; out over LEAVE_HIGH, or over LEAVE_FAST unless DEEP, or under LANDED within FALLEN frames of touching or
+  rising slower than RISING, so a walking foot lifting off from under its floor leaves on its speed; tuned against
+  the plates' loaded frames on subjects 2 to 5). GEM-X's static flag, used
+  before, came 3 to 4 frames late at heel strike. A touching foot is pushed from its lowest point, its sole laid on its ground there whether over
+  it or into it (toes 17 to 29 mm into the floor at push-off pushed hundreds of points); a foot not touching is not
+  pushed at all (credit AWAY), on `pushes`, `pushes_all` and `touching_all` alike (a state's credit is its frame's,
+  states being whole copies of the clip).
+- **A point pushes by its area** (`point_areas`, `Skin.areas`): its directions are `closeness` times the square root of
+  its share of the skin's area, so the least squares that shares the load gives each point its area's share, not
+  each point an equal one (SOMA's low mesh: 127 toe points of 0.6 cm2 under a sole against 17 of 7 cm2 under the heel
+  and midfoot).

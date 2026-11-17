@@ -94,7 +94,7 @@ from motor import fit  # noqa: E402
 from motor import trial  # noqa: E402
 from motor import myo  # noqa: E402
 from motor.bone_groups import FEET, groups  # noqa: E402
-from motor.contact import Skin, lowests  # noqa: E402
+from motor.contact import Skin, feet_touching, lowests  # noqa: E402
 from motor.landmarks import at_starts  # noqa: E402
 from motor.model import TO_OWN, body_index, built, carried, filtered, posed_path, rates  # noqa: E402
 from motor.muscles import Physics, parts_of  # noqa: E402
@@ -108,7 +108,7 @@ from motor.sizing import Size  # noqa: E402
 VENDORED = pathlib.Path(__file__).resolve().parents[2] / "vendor" / "myofullbody"
 CHECKED = "checks: RRA's record, feet held, following on MuJoCo's compile"
 
-FEET_SIDES = (("LeftFoot", "LeftToeBase"), ("RightFoot", "RightToeBase"))  # a seen stance's columns, left then right
+FEET_SIDES = (("LeftFoot", "LeftToeBase"), ("RightFoot", "RightToeBase"))  # each foot's segments, left then right
 DYNAMICS = "dynamics"  # a job's "motor" for MOTOR's step 1 and step 2's stage A (#98); true for step 1 alone
 MUSCLES = "muscles"  # ... and step 4's stage B on stage A's answer: the frames' activations stage B's
 
@@ -198,27 +198,28 @@ def skin_of(rig, segments, bodies, riding, fitted, worlds):
     table = groups()
     starts = at_starts(rig, segments, [table[segment][0][0] for segment in segments])
     skin = Skin(rig["points"], np.asarray(rig["weights"], dtype=float)[:, joints], starts,
-                [bodies[segment] for segment in segments], [riding[segment] for segment in segments])
+                [bodies[segment] for segment in segments], [riding[segment] for segment in segments], rig["faces"])
     soma = np.asarray(worlds, dtype=float) @ np.linalg.inv(np.asarray(rig["bind"], dtype=float)[joints]) @ starts
     return skin.registered(fitted, soma)
 
 
-def credited(physics, skin, path, stance, bodies):
-    """`skin` with each foot seen standing (`stance`, frames x 2: left, right; the targets') pushed from its own
-    lowest point on `path` (`Skin.credited`); as it came where the targets carry no stance."""
-    if stance is None:
-        return skin
-    if len(stance) != len(path):
-        raise ValueError(f"{len(stance)} frames of seen stance for a path of {len(path)}")
+def credited(physics, skin, path, bodies, rate):
+    """`skin` with each foot's contact MOTOR's own (`contact.feet_touching`: on `path`, each foot's lowest skin point
+    over its ground and the slower of its bodies' origins' speeds, central differences at `rate`), a touching foot
+    pushed from its own lowest point and the others not at all (`Skin.credited`)."""
     sides = [[bodies[segment] for segment in side] for side in FEET_SIDES]
     parts = {side: np.flatnonzero(np.isin(skin.owners, mine)) for side, mine in enumerate(sides)}
-    data, lowest = mujoco.MjData(physics.model), []
+    data, lowest, places = mujoco.MjData(physics.model), [], []
     for qpos in path:
         data.qpos[:] = qpos
         mujoco.mj_kinematics(physics.model, data)
         found = lowests(physics.model, data, skin, physics.ground, parts)[1]
         lowest.append([np.nan if found[side] is None else found[side] for side in range(len(sides))])
-    skin.credited(np.array(lowest), np.asarray(stance, dtype=bool), sides)
+        places.append([[data.xpos[body].copy() for body in side] for side in sides])
+    places = np.array(places)  # frames x feet x bodies x 3
+    speed = np.linalg.norm(np.gradient(places, 1.0 / rate, axis=0), axis=-1).min(axis=2) if len(path) > 1 else \
+        np.zeros((len(path), len(sides)))
+    skin.credited(np.array(lowest), feet_touching(np.array(lowest), speed, rate), sides)
     return skin
 
 
@@ -253,7 +254,7 @@ def run_person(job, person, out_path):
              else filtered(model, physics.couplings, carried(own, model, angles), job["rate"]))
     fitted_poses = posed_path(model, qpath, segments, bodies, riding)
     skin = skin_of(rig, segments, bodies, riding, fitted_poses, worlds)
-    physics.skin = credited(physics, skin, qpath, targets["stance"] if "stance" in targets.files else None, bodies)
+    physics.skin = credited(physics, skin, qpath, bodies, job["rate"])
     feet = {segment: np.flatnonzero(skin.owners == bodies[segment]) for segment in segments if segment.endswith(FEET)}
     weight = sum(model.body_mass) * job["gravity"]
     standing = com_height(model, qpath[0], ground)
