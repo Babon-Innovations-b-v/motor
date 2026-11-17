@@ -27,7 +27,8 @@ its path so its build line and evidence paths read the same. Its `#N` and commen
   side in time: the input body, MyoFullBody in its skin with the activation colour bar, the floor's vertical GRF with
   a moving marker. `prepare.py` with every frame, then Blender's `render_clip.py` (the teaser's look, one fixed camera
   over the clip), then `compose_clip.py` (H.264 and a looping GIF, 440 px high). The videos are `motor/demos/`, made
-  2026-11-16 from the 2026-11-07 run on this PC's card.
+  2026-11-16 from the 2026-11-07 run on this PC's card; their GRF panels 2026-11-17 from a run of ad7e8c6 (MOTOR's own
+  contact, #1), the bodies and activations still the 2026-11-07 run's.
 
 ## Rules
 
