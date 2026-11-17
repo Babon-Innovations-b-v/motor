@@ -2,7 +2,7 @@
 
 ![MOTOR on a squat](paper/motor/demos/motor-squat-subject2.gif)
 
-*Squat, subject 2 of the public LabValidation dataset: the input body (SOMA), MyoFullBody with its muscle activations, and MOTOR's vertical ground reaction force per foot.*
+*Squat, subject 2 of the public LabValidation dataset: the input body (SOMA), MyoFullBody with its muscle activations, and MOTOR's vertical ground reaction force per foot (solid) beside the trial's measured force plates (dashed).*
 
 ![MOTOR on walking](paper/motor/demos/motor-walking-subject3.gif)
 

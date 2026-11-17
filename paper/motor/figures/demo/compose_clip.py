@@ -5,9 +5,11 @@ teaser's look (figures/teaser/compose.py: its floor shadow, colours and font). B
 that holds the body in every frame of the clip, so they keep one scale and a fixed view. The force is the run's own:
 out.json's frames[].touches, each foot's y (up) in N, over the subject's weight (record.json's kg times 9.81, as
 LabValidation's scorer weighs it), unfiltered; a push whose centre of pressure stands over OFF_FLOOR (a drop jump's
-box) is left out, as the scorer leaves it out, so the curve is the floor's force the lab's plates measure.
+box) is left out, as the scorer leaves it out, so the curve is the floor's force the lab's plates measure. Beside it,
+thin and dashed in the same foot's colour, the trial's measured force plates (plates.py's npz: the scorer's alignment
+and filter, at the run's frames), so the plot shows how close the estimate is.
 
-    python compose_clip.py <renders folder> <trial folder> <out.mp4> <out.gif>"""
+    python compose_clip.py <renders folder> <trial folder> <plates.npz> <out.mp4> <out.gif>"""
 import json
 import pathlib
 import subprocess
@@ -83,8 +85,8 @@ def axes_at(figure, inner, size):
     return figure.add_axes([left / size[0], bottom / size[1], width / size[0], height / size[1]])
 
 
-def layout(renders, box, force):
-    """The figure, its two image artists and its time marker, at frame 0."""
+def layout(renders, box, force, plates):
+    """The figure, its two image artists and its time marker, at frame 0; `plates` the measured force per foot."""
     top, bottom, left, right = box
     inner_height = HEIGHT - 2 * (MARGIN + INSET)
     body_width = int(round((right - left) / (bottom - top) * inner_height)) + 2 * INSET
@@ -111,12 +113,16 @@ def layout(renders, box, force):
     plot = axes_at(figure, (plot_left + 70, MARGIN + 52, PLOT_WIDTH - 96, HEIGHT - 2 * MARGIN - 112), size)
     time = np.arange(len(force["right"])) / RATE
     for side, _, colour in FEET:
-        plot.plot(time, force[side], color=colour, lw=2.0, label=side)
-    plot.set_ylim(0, max(150.0, np.ceil(max(force["right"].max(), force["left"].max()) / 50) * 50))
+        plot.plot(time, force[side], color=colour, lw=2.0, label=f"{side} MOTOR")
+    for side, _, colour in FEET:
+        plot.plot(time, plates[side], color=colour, lw=1.0, ls=(0, (3, 2)), label=f"{side} plate")
+    highest = max(force["right"].max(), force["left"].max(), np.nanmax(plates["right"]), np.nanmax(plates["left"]))
+    plot.set_ylim(0, max(150.0, np.ceil(highest / 50) * 50))
     plot.set_xlim(time[0], time[-1])
     plot.set_xlabel("time (s)", fontsize=FONT - 2, labelpad=2)
     plot.spines[["top", "right"]].set_visible(False)
-    plot.legend(frameon=False, loc="lower right", ncol=2, bbox_to_anchor=(1.0, 1.0), borderaxespad=0)
+    plot.legend(frameon=False, loc="lower right", ncol=4, bbox_to_anchor=(1.0, 1.0), borderaxespad=0,
+                handlelength=1.6, columnspacing=0.9, handletextpad=0.4)
     marker = plot.axvline(0, color="0.35", lw=1.2, ls=(0, (4, 3)))
     return figure, images, marker, size
 
@@ -137,13 +143,16 @@ def gif_of(video, out):
                     str(out)], check=True)
 
 
-def main(renders, folder, out, gif):
+def main(renders, folder, plates_path, out, gif):
     force = vertical_force(folder)
+    with np.load(plates_path) as saved:
+        plates = {side: saved[side] for side in ("right", "left")}
     count = frames_of(renders)
-    if count != len(force["right"]):
-        raise SystemExit(f"{renders}: {count} rendered frames of the run's {len(force['right'])}")
+    if not count == len(force["right"]) == len(plates["right"]):
+        raise SystemExit(f"{renders}: {count} rendered frames, the run's {len(force['right'])}, the plates' "
+                         f"{len(plates['right'])}")
     box = body_box(renders, count)
-    figure, images, marker, (width, height) = layout(renders, box, force)
+    figure, images, marker, (width, height) = layout(renders, box, force, plates)
     top, bottom, left, right = box
     encoder = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba",
                                 "-s", f"{width}x{height}", "-r", str(RATE), "-i", "-", "-c:v", "libx264", "-crf", "23",
@@ -163,4 +172,4 @@ def main(renders, folder, out, gif):
 
 
 if __name__ == "__main__":
-    main(pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3], sys.argv[4])
+    main(pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3], sys.argv[4], sys.argv[5])
