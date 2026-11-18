@@ -33,3 +33,7 @@ to 27 mm inside his skin, which sat 10 mm into his floor, so the floor carried 0
   its share of the skin's area, so the least squares that shares the load gives each point its area's share, not
   each point an equal one (SOMA's low mesh: 127 toe points of 0.6 cm2 under a sole against 17 of 7 cm2 under the heel
   and midfoot).
+- **The feet's split follows the contacts' timeline** (#1, 2026-11-18, `feet_shares`, `Skin.shares`, set by
+  `credited`): while both feet touch, the left foot's share of their load, a step's linear handover from the foot
+  lifting off to the one coming down, otherwise each foot ramping in or out over RAMP and equal between;
+  `muscles.split_row` asks it of the share step.

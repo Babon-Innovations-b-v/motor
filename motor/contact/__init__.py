@@ -35,6 +35,15 @@ FALLING, FALLEN = 0.6, 3  # m/s down, frames
 # A foot not in contact is pushed from AWAY under its points, so none of them is; one in contact from its lowest
 # point, its sole laid on its ground there whether over it or into it (no toes pushed from inside the floor).
 AWAY = -1.0  # metres
+# With both feet down, the feet's load is shared by their contacts' timeline, not by the video body's lean or the
+# contacts' closeness (#1, 2026-11-18, the owner: "assymetry in how the feet land on the ground and the actual ground
+# contact"): a foot coming down while the other lifts off takes the load over from it linearly over the frames both
+# touch (its share half a frame's worth at the first, the other's at the last), and otherwise a foot coming down or
+# lifting off ramps its share in or out over RAMP, the feet sharing equally between (`feet_shares`). On subject 3's
+# walking2 both the lean (the input body's centre of mass and its needed force: the left share 0.34 falling to 0.17
+# as the plates' rose 0.14 to 0.79) and the contacts' closeness (0.27 to 0.33 throughout) held the trailing foot
+# loaded to its lift-off, which then dropped as a cliff; through a squat the closeness gave the flatter sole 0.6 of it.
+RAMP = 0.1  # seconds
 REGISTERED_FRAMES = 60  # frames spread over a clip that lay each segment's skin on SOMA's (`Skin.registered`)
 SLIDE_MOST = 1.2  # m/s
 FRICTION = 0.5
@@ -57,6 +66,7 @@ class Skin:
         self.bodies, self.riding = list(bodies), np.asarray(riding, float)
         self.owners = np.asarray(self.bodies)[self.weights.argmax(axis=1)]  # the body a point's force is booked on
         self.credit = None  # frames x points: how far over its ground each point is pushed from (`credited`)
+        self.shares = None  # frames: the left foot's share of the feet's load, nan unless both touch (`credited`)
 
     def registered(self, carried, soma):
         """This skin with each segment's riding moved by the one rigid turn and shift that best lays the segment's
@@ -78,19 +88,29 @@ class Skin:
             given = np.tile(local, (len(frames), 1))
             riding[segment] = riding[segment] @ kabsch(given, wanted)
         found = Skin(self.points, self.weights, np.linalg.inv(self.unbound), self.bodies, riding)
-        found.credit, found.areas = self.credit, self.areas
+        found.credit, found.areas, found.shares = self.credit, self.areas, self.shares
         return found
 
-    def credited(self, lowest, touching, feet):
+    def credited(self, lowest, touching, feet, rate):
         """This skin's `credit` set: on each frame a foot touches (`touching`, frames x feet, `feet_touching`), each
         point it carries most (`feet`, each foot's bodies) is pushed from its lowest point's height (`lowest`, frames x
-        feet, m), as if the ground stood at its sole; on the others from AWAY, so none of them is pushed."""
+        feet, m), as if the ground stood at its sole; on the others from AWAY, so none of them is pushed; and its
+        `shares`, the feet's split while both touch (`feet_shares`, `rate` frames a second; the left foot first)."""
+        self.shares = feet_shares(touching, rate)
         credit = np.zeros((len(touching), len(self.points)))
         for foot, bodies in enumerate(feet):
             mine = np.isin(self.owners, list(bodies))
             touches = np.asarray(touching)[:, foot] & np.isfinite(lowest[:, foot])
             credit[:, mine] = np.where(touches, np.nan_to_num(lowest[:, foot]), AWAY)[:, None]
         self.credit = credit
+
+    def share_of(self, state):
+        """The left foot's share of the feet's load on `state` (a frame of the clip, or of a whole copy of it
+        stacked; `feet_shares`), None when the skin has none or not both feet touch."""
+        if self.shares is None or not len(self.shares):
+            return None
+        found = self.shares[state % len(self.shares)]
+        return None if np.isnan(found) else float(found)
 
     def credit_of(self, count):
         """Each of `count` states' credit (states x points): a state is a frame of the clip, or of a whole copy of it
@@ -166,6 +186,40 @@ def feet_touching(lowest, speed, rate):
                 touching = bool(deep or landed or (over[frame] < TOUCH_HIGH and speed[frame, foot] < TOUCH_FAST
                                          and rising[frame] < RISING))
             found[frame, foot] = touching
+    return found
+
+
+def feet_shares(touching, rate):
+    """The left foot's share of the feet's load each frame (frames, nan unless both feet touch; `touching` frames x
+    two feet, left first, `feet_touching`'s), from the contacts' timeline over each span of frames both touch: a foot
+    coming down at its start while the other lifts off at its end takes the load over linearly, (frame - start + 1/2)
+    over the span's frames; otherwise each foot's weight ramps from 0 over RAMP (`rate` frames a second) after it
+    comes down and to 0 before it lifts off, 1 between, its share its weight over both's (equal on a long stance)."""
+    touching = np.asarray(touching, bool)
+    found = np.full(len(touching), np.nan)
+    if touching.ndim != 2 or touching.shape[1] != 2:
+        return found
+    both = touching[:, 0] & touching[:, 1]
+    ramp = max(RAMP * rate, 1.0)
+    edges = np.flatnonzero(np.diff(np.concatenate([[0], both.astype(int), [0]])))
+    for start, end in zip(edges[::2], edges[1::2]):
+        frames = np.arange(start, end)
+        came = [start > 0 and not touching[start - 1, foot] for foot in range(2)]
+        leaves = [end < len(touching) and not touching[end, foot] for foot in range(2)]
+        over = (frames - start + 0.5) / (end - start)
+        if came[0] and leaves[1] and not came[1] and not leaves[0]:
+            found[frames] = over
+        elif came[1] and leaves[0] and not came[0] and not leaves[1]:
+            found[frames] = 1.0 - over
+        else:
+            weights = np.ones((len(frames), 2))
+            for foot in range(2):
+                if came[foot]:
+                    weights[:, foot] = np.minimum(weights[:, foot], (frames - start + 0.5) / ramp)
+                if leaves[foot]:
+                    weights[:, foot] = np.minimum(weights[:, foot], (end - frames - 0.5) / ramp)
+            weights = np.clip(weights, 0.0, 1.0)
+            found[frames] = weights[:, 0] / weights.sum(axis=1)
     return found
 
 

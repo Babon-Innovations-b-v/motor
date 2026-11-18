@@ -36,6 +36,9 @@ Breaks (each applied once with the env linked into a sandbox home, seen red, rev
 - feet_touching's `held = down and (since < FALLEN or rising[frame] < RISING)` made `held = down`: a foot standing,
   then lifting off fast from under its floor, stays touching.
 - feet_touching's `since < FALLEN or ` dropped: a landed foot settling up out of its floor leaves on its speed.
+2026-11-18 (#1):
+- feet_shares' `found[frames] = over` made `found[frames] = 0.5`: a step's left shares 0.5, not 1/6, 1/2, 5/6.
+- feet_shares' `/ ramp` made `/ 1.0`: a late foot's shares 0.333, 0.5, not 1/7, 1/3, 5/11.
 
 Run: .venv/bin/python motor/contact/test_only_a_point_within_gap_is_pushed.py
 """
@@ -271,7 +274,7 @@ def seen_standing_problems():
                                              (0.052, False, 0.002, 0)):
         model, data = ball_at(height)
         skin = skin_of(model, data)
-        skin.credited(np.array([[lowest]]), np.array([[touching]]), [[1]])
+        skin.credited(np.array([[lowest]]), np.array([[touching]]), [[1]], 30.0)
         found = contact.pushes(model, data, flat(), up, skin)
         if len(found) != wanted:
             problems.append(f"touching {touching}, lowest {lowest}: {len(found)} points pushed, not {wanted}")
@@ -317,8 +320,30 @@ def touching_problems():
         [f"landing fast 15 mm into the floor: {falling[:, 0].tolist()}, not touching at once"]
     pushing = contact.feet_touching(np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [-0.01], [-0.02], [-0.01], [0.01]]),
                                     np.array([[0.1], [0.1], [0.1], [0.1], [0.1], [0.5], [1.0], [2.0], [2.2]]), 30.0)
-    return problems + ([] if pushing[:, 0].tolist() == [True] * 7 + [False, False] else
-                       [f"lifting off fast from under the floor: {pushing[:, 0].tolist()}, still touching"])
+    if pushing[:, 0].tolist() != [True] * 7 + [False, False]:
+        problems.append(f"lifting off fast from under the floor: {pushing[:, 0].tolist()}, still touching")
+    return problems + shares_problems()
+
+
+def shares_problems():
+    """The feet's split while both touch (`feet_shares`): a step, the left foot down on frame 5 while the right lifts
+    off after frame 7, hands the load over linearly (left 1/6, 1/2, 5/6); a stance both feet hold throughout shares it
+    equally; a foot coming down on frame 2 of a long stance ramps in over RAMP (3 frames at 30 a second: 1/7, 1/3, 5/11,
+    then 1/2); one foot alone, none (#1, 2026-11-18: walking's trailing foot held its load to its lift-off, a cliff)."""
+    import numpy as np
+    from motor import contact
+    problems = []
+    step = np.zeros((12, 2), bool)
+    step[:8, 1], step[5:, 0] = True, True
+    for name, touching, wanted in (
+            ("a step", step, [np.nan] * 5 + [1 / 6, 1 / 2, 5 / 6] + [np.nan] * 4),
+            ("a stance", np.ones((4, 2), bool), [0.5] * 4),
+            ("a late foot", np.concatenate([[[False, True]] * 2, np.ones((6, 2), bool)]),
+             [np.nan, np.nan, 1 / 7, 1 / 3, 5 / 11, 0.5, 0.5, 0.5])):
+        found = contact.feet_shares(touching, 30.0)
+        if not np.allclose(found, wanted, equal_nan=True):
+            problems.append(f"{name}: left shares {np.round(found, 3).tolist()}, not {np.round(wanted, 3).tolist()}")
+    return problems
 
 
 def area_problems():

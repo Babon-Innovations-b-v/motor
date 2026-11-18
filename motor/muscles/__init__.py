@@ -34,16 +34,16 @@ BALANCE = 100.0
 # 0.1 in one round the residual grew by 7.9 N.
 SHARE_COST = 0.03
 SHARE_ROUNDS = 2
-# The weight of a newton of the feet's vertical split off their contact's (`split_row`), beside the balance's rows at
-# BALANCE (#1, 2026-11-18, the owner: "its foot conctact"): with both feet down the balance alone left the split to the
-# video body's frontal moment, and it swung with it frame to frame (a squat's left share 0.28 to 0.82 against the
-# plates' steady 0.48; a drop jump's 0.32 to 0.95). Each foot is asked for its contact's share of the feet's load (its
-# touching points' `contact.closeness` and area); what that leaves of the balance is the pelvis' residual. Swept over
-# 0, 10, 30, 100, 300 and 1000 on LabValidation's subjects 2 to 4 (13 single-camera trials, #1's comment of
-# 2026-11-18): at 30 every motion's per-foot peak error, RMSE, left-share error, leg activation ratio and contact
-# timing improved on 0, the residual moment up 3 to 5 N m; from 100 the squats' and sit-to-stands' split came within
-# 0.03 of the plates but walking's and the drop jumps' peaks moved off theirs (7.6 to 13.7 and 40 to 52 %BW).
-SPLIT = 30.0
+# The weight of a newton of the feet's vertical split off their contacts' timeline's (`split_row`,
+# `contact.feet_shares`), beside the balance's rows at BALANCE (#1, 2026-11-18, the owner: "its foot conctact"): with
+# both feet down the balance alone left the split to the video body's frontal moment, and it swung with it frame to
+# frame (a squat's left share 0.28 to 0.82 against the plates' steady 0.48; a drop jump's 0.32 to 0.95); the
+# contacts' closeness after it gave the flatter sole more and held walking's trailing foot loaded to its lift-off.
+# What the split leaves of the balance is the pelvis' residual. Swept over 30, 100 and 300 on the README's three demo
+# trials: at 30 the balance still set the split (walking's left share error 0.132, the squat's 0.082); at 100 walking's
+# per-foot RMSE fell 13.2 to 7.1 %BW, the squat's 14.1 to 6.6, the drop jump's 16.9 to 11.7; 300 was no better on
+# walking and moved the residual moment up another 3 to 4 N m.
+SPLIT = 100.0
 FEET_PARTS = ("LeftFoot", "RightFoot")  # the feet's parts (`parts_of`), left first: `split_row`'s
 # the static optimisation's two stages, as their wall seconds are named (`staged`'s `seconds`)
 STAGES = ("static optimisation 1, ground reaction", "static optimisation 2, stops and muscles")
@@ -123,9 +123,10 @@ class Physics:
         try:
             for row in range(len(found["needed"])):
                 self.laid, self.laid_over = (touching[row], over[row]) if contacts else (None, None)
+                self.row = row
                 yield self.card.load(found, row, self.data)
         finally:
-            self.laid, self.laid_over = None, None
+            self.laid, self.laid_over, self.row = None, None, 0
 
     def lowests(self, parts):
         """The lowest of the skin's points over its ground now, and of each part's ({part: its points' indices}),
@@ -238,7 +239,8 @@ class Physics:
         costs = np.concatenate([np.full(count + held, CONTACT_COST), np.ones(len(self.muscles))])
         highest = np.concatenate([np.full(count + held, np.inf), np.ones(len(self.muscles))])
         return {"costs": costs, "highest": highest, "system": system, "wanted": wanted,
-                "count": count, "held": held, "contacts": contacts, "split": split_row(contacts, self.parts), "gains": gains, "biases": biases,
+                "count": count, "held": held, "contacts": contacts, "split": split_row(contacts, self.parts, None if self.skin is None else self.skin.share_of(self.row)),
+                "gains": gains, "biases": biases,
                 "pushes": pushes, "mapped": mapped, "needed": needed,
                 "root": data.xmat[model.jnt_bodyid[0]].reshape(3, 3).copy()}
 
@@ -261,25 +263,20 @@ class Physics:
                 "moments": net[6:], "own moments": whole[self.couplings.leads[6:]]}
 
 
-def split_row(contacts, parts):
-    """The feet's vertical split off their contact's (count: a row over the contacts' columns, edge by edge): each
-    foot's vertical push times the other's contact (`reach`: each touching point's push length squared, its
-    `contact.closeness` times its area, summed over the foot) over both's, the left's less the right's, so the row is 0
-    where each foot carries its contact's share of the feet's load; all 0 unless both feet touch (`parts`: each body's
-    part, FEET_PARTS the feet's)."""
+def split_row(contacts, parts, left):
+    """The feet's vertical split off their contacts' timeline's (count: a row over the contacts' columns, edge by
+    edge): each foot's vertical push times the other's share less the other's push times its own, the left's less the
+    right's (`left` the left foot's share, `contact.feet_shares`), so the row is 0 where each foot carries its share of
+    the feet's load; all 0 without a share or unless both feet touch (`parts`: each body's part, FEET_PARTS the
+    feet's)."""
     sides, ups = [], []
     for body, _, edges, _ in contacts:
         sides += [FEET_PARTS.index(parts[body]) if parts[body] in FEET_PARTS else -1] * len(edges)
         ups += [edge[2] for edge in edges]
     sides, ups = np.array(sides, int), np.array(ups, float)
-    reach = np.zeros(2)
-    for foot in range(2):
-        mine = [np.mean(edges, axis=0)[2] for body, _, edges, _ in contacts if parts[body] == FEET_PARTS[foot]]
-        reach[foot] = float(np.sum(np.square(mine)))
-    if not len(sides) or reach.min() <= 0:
+    if left is None or not ((sides == 0).any() and (sides == 1).any()):
         return np.zeros(len(sides))
-    shares = reach[::-1] / reach.sum()  # the left's push weighed by the right's contact, and the right's by the left's
-    return np.where(sides == 0, ups * shares[0], np.where(sides == 1, -ups * shares[1], 0.0))
+    return np.where(sides == 0, ups * (1.0 - left), np.where(sides == 1, -ups * left, 0.0))
 
 
 def balance_asked(problem):

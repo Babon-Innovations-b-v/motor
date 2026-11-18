@@ -219,7 +219,7 @@ def credited(physics, skin, path, bodies, rate):
     places = np.array(places)  # frames x feet x bodies x 3
     speed = np.linalg.norm(np.gradient(places, 1.0 / rate, axis=0), axis=-1).min(axis=2) if len(path) > 1 else \
         np.zeros((len(path), len(sides)))
-    skin.credited(np.array(lowest), feet_touching(np.array(lowest), speed, rate), sides)
+    skin.credited(np.array(lowest), feet_touching(np.array(lowest), speed, rate), sides, rate)
     return skin
 
 

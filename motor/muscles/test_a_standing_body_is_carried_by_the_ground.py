@@ -31,7 +31,7 @@ Breaks (each applied once with the env linked into a sandbox home, seen red, rev
 - share_asked's SHARE_COST made CONTACT_COST: the nudge moves it by 0.0028 (the balance crowded on a few points).
 2026-11-18 (#1):
 - share_asked's `SPLIT * split[None]` made `0.0 * split[None]`: the right foot carries 0.85 of the weight.
-- split_row's `reach[::-1] / reach.sum()` made `reach / reach.sum()`: the four-point foot's push weighed by its own.
+- split_row's `ups * (1.0 - left)` made `ups * left`: the left foot's push weighed by its own share.
 2026-11-07:
 - problem's `np.concatenate([self.stops(), self.ligaments()], axis=1)` made `self.stops()`: the turn's 5 N m moves
   the activations (the muscles reach it 1 cm off its axis) and leaves a reserve on it.
@@ -283,20 +283,23 @@ def ground_frames_are_well_posed():
 
 
 def split_problems():
-    """The feet's split off their contact (`split_row`): a left foot of four touching points and a right of one, each
-    push one long, weigh the left's vertical push by 1/5 and the right's by -4/5; and `feet` asked to stand its weight
-    8 cm toward its right foot (past the middle of its sole), which the balance alone gives the right foot 0.8 of,
-    the two feet's equal contact brings within 0.15 of half the weight while the ground still carries it within 2 %
-    (#1, 2026-11-18: the split followed the video body's frontal moment, the left share 0.28 to 0.82 frame to frame
-    through a squat the plates held at 0.48)."""
+    """The feet's split off their contacts' timeline (`split_row`): a left foot of four touching points and a right of
+    one, the left's share 1/4 (`contact.feet_shares`), weigh the left's vertical push by 3/4 and the right's by -1/4,
+    whatever each foot's points' count, and without a share nothing; and `feet` asked to stand its weight 8 cm toward
+    its right foot (past the middle of its sole), which the balance alone gives the right foot 0.8 of, a split of half
+    each brings within 0.15 of half the weight while the ground still carries it within 2 % (#1, 2026-11-18: the split
+    followed the video body's frontal moment, the left share 0.28 to 0.82 frame to frame through a squat the plates
+    held at 0.48; then the contacts' closeness, the flatter sole carrying more)."""
     from motor import muscles
     import numpy as np
     from motor.solvers import least
     pyramid = [np.array([0.0, 0.0, 1.0])] * 4
     contacts = [(1, None, pyramid, None)] * 4 + [(2, None, pyramid, None)]
-    row = muscles.split_row(contacts, {1: "LeftFoot", 2: "RightFoot"})
-    wanted = np.concatenate([np.full(16, 0.2), np.full(4, -0.8)])
+    row = muscles.split_row(contacts, {1: "LeftFoot", 2: "RightFoot"}, 0.25)
+    wanted = np.concatenate([np.full(16, 0.75), np.full(4, -0.25)])
     problems = [] if np.allclose(row, wanted) else [f"split row {np.round(row, 3).tolist()}, not {wanted.tolist()}"]
+    if muscles.split_row(contacts, {1: "LeftFoot", 2: "RightFoot"}, None).any():
+        problems.append("without a share the split row asks a split")
     plain = feet(0.0)
     count = plain["count"]
     plain["wanted"][3] = 700.0 * 0.08  # about x: the weight 8 cm toward the right foot (y = +0.1)

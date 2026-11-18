@@ -20,7 +20,10 @@ parent overlay).
   its ligaments and condyles, two-sided columns at CONTACT_COST beside the stops (`ligaments`; #98, 2026-11-07):
   MyoFullBody's vasti reach it 0.3 to 0.5 cm off its axis, and its few newton metres, left to the muscles, set the
   vasti's split (at a deep squat one vastus fully active, another at 0).
-- **Each foot carries its contact's share** (#1, 2026-11-18, the owner: "its foot conctact"; `split_row`, SPLIT):
-  with both feet down the share step also asks the feet's vertical split to be their contacts' (each sole's push
-  lengths squared, summed: each touching point's `contact.closeness` times its area), so the split is the contact's, not the video body's frontal
-  moment frame to frame; what that leaves of the balance is the pelvis' residual.
+- **Each foot carries its share of the contacts' timeline** (#1, 2026-11-18, the owner: "its foot conctact";
+  `split_row`, SPLIT, `contact.feet_shares`): with both feet down the share step also asks the feet's vertical split
+  to be the timeline's: a foot coming down while the other lifts off takes the load over linearly over the frames both
+  touch, else each foot ramps in or out over `contact.RAMP` and the feet share equally between. Neither the contacts'
+  closeness (the flatter sole carried more; walking's trailing foot held its load to lift-off, a cliff) nor the video
+  body's lean (its centre of mass and needed force: worse on all three demo trials) sets it; what the split leaves of
+  the balance is the pelvis' residual.
