@@ -27,8 +27,9 @@ its path so its build line and evidence paths read the same. Its `#N` and commen
   side in time: the input body, MyoFullBody in its skin with the activation colour bar, the floor's vertical GRF with
   a moving marker. `prepare.py` with every frame, then Blender's `render_clip.py` (the teaser's look, one fixed camera
   over the clip), then `compose_clip.py` (H.264 and a looping GIF, 440 px high). The videos are `motor/demos/`, made
-  2026-11-18 on this PC's card from a run of 6d72d73 (each foot its contact's share, #1) on the single-camera
-  LabValidation jobs, every window from that one run: bodies, activations and GRF.
+  2026-11-18 on this PC's card from a run of 4799331 (each foot its share of the contacts' timeline, #1) on the
+  single-camera LabValidation jobs, every window from that one run: bodies, activations and GRF; named `-timeline` so
+  GitHub shows them, not its cached earlier clips.
 
 ## Rules
 
