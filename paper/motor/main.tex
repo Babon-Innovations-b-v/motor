@@ -131,7 +131,7 @@ our knowledge, it is the first open chain from video to muscle forces on Newton 
 \section{Method}
 \label{sec:method}
 
-\paragraph{The shared fit.} MOTOR's calibration, run once offline over synthetic bodies, and its solver, run on each
+MOTOR's calibration, run once offline over synthetic bodies, and its solver, run on each
 recording, share one per-frame fit (Appendix~\ref{app:method}, Figure~\ref{fig:method}). The input is a SOMA body per frame $t$ (posed skin $\mathcal{S}_t$, segment
 rotations, joints). MyoFullBody \cite{caggiano2022myosuite,li2026musclemimic,holzbaur2005upper} has 416 muscles and 132
 joints, 36 of which follow a leading coordinate through the model's polynomials,
@@ -164,8 +164,8 @@ within 0.0025\dg{} of mink \cite{mink}.
 % to mink (0.0025 deg, 0.0042 mm): #70 comment 6556935442.
 
 
-\paragraph{Calibration.} The constants every body shares (each landmark's link and weight $w_m$, each segment
-end's place, $\lambda_m$, $\lambda_e$) form one vector $z$ of scaled unknowns, mirrored left to right: moves
+The calibration tunes the constants that every body shares (each landmark's link and weight $w_m$, each segment
+end's place, $\lambda_m$, $\lambda_e$) as one vector $z$ of scaled unknowns, mirrored left to right: moves
 $\ell_0z_i$ ($\ell_0=5$\,mm, within 30 or 40\,mm) and weights $w^0e^{\gamma z_i}$ ($\gamma=0.25$,
 $|\gamma z_i|\le0.75$). Over cases $c$ (21 synthetic SOMA bodies of varied build, seven clips each) it solves
 \begin{equation}
@@ -183,7 +183,7 @@ through both solves except for the segment-end columns, which are taken by finit
 % short, heavy, slim, long and short legs), clips and the held-out rule: #70 comment 6556935195; hybrid Jacobian (end
 % columns by finite differences): #70 comment 6556935442 section 5, tuning/_differences.py hybrid.
 
-\paragraph{The solver at inference time.} On a recording the solver first estimates the person's constants
+At inference time, on each recording, the solver first estimates the person's constants
 $\theta=(\delta,u)$, the moves of the free landmarks on their bones and of the joint centres inside their groups,
 jointly with about 30 frames by Levenberg--Marquardt, each move within 3\,cm and drawn back toward its start
 (Eq.~\ref{eq:person}, Appendix~\ref{sec:person}). It then fits every frame (Eq.~\ref{eq:fit}), low-passes the path at 6\,Hz
@@ -314,13 +314,13 @@ anterior error (the video's anterior demand is 17.4\% of body weight off, the la
 % elbow -21.12 / -23.66); elbow-2026-11-07.txt (median -18.5); comparison-2026-11-09.txt (KAM Cam1 1.97, Monocular
 % 0.36); #98 comment 6721835197 (37-44 against 9-16 mm); teaser-2026-11-07.json (90.13 left / 52.93 right).
 
-\paragraph{Changes since the run, future work and limitations.} Two changes address the split, so far on subsets awaiting a full-cohort run.
+Two changes made since this run address the split, so far on subsets awaiting a full-cohort run.
 Each foot's contact from its lowest skin point over a per-trial floor, instead of GEM-X's stance flag, lowers the
 per-foot vertical error of 18 held-out walks from 17.2 to 15.1\% of body weight (drop jumps 19.9 to 19.8\%), and a
 row in Equation~\eqref{eq:stages} giving each foot its contact's share lowers the per-foot root-mean-square error of
 two training squats from 21.2 to 13.5\%, on the trials its weight was chosen on, at a pelvis residual moment 1.5 to
 6\,N\,m higher. A whole-trial solve raised the frames within the residual limits from 21 to 35\% at five times the
-time but worsened the moments and EMG agreement, so the next gains lie in the input. The cohort holds only healthy adults, GEM-X resamples to 30\,Hz while drop jumps carry the
+time but worsened the moments and EMG agreement, so the next gains lie in the input. Three limitations remain: the cohort holds only healthy adults, GEM-X resamples to 30\,Hz while drop jumps carry the
 largest errors, and the calibration in use lacks a recorded held-out score.
 % ad7e8c6: motor issue #1 comment 6962132074 (held-out Cam1 walking n = 18: 17.2 -> 15.1). 6d72d73: #1 comment
 % 6980387981 (13 trials, subjects 2-4, Cam1: squats per-foot RMSE 21.2 -> 13.5). Neither is in the full-cohort
