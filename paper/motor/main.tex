@@ -317,13 +317,14 @@ anterior error (the video's anterior demand is 17.4\% of body weight off, the la
 Two changes made since this run address the split, so far on subsets awaiting a full-cohort run.
 Each foot's contact from its lowest skin point over a per-trial floor, instead of GEM-X's stance flag, lowers the
 per-foot vertical error of 18 held-out walks from 17.2 to 15.1\% of body weight (drop jumps 19.9 to 19.8\%), and a
-row in Equation~\eqref{eq:stages} giving each foot its contact's share lowers the per-foot root-mean-square error of
-two training squats from 21.2 to 13.5\%, on the trials its weight was chosen on, at a pelvis residual moment 1.5 to
-6\,N\,m higher. A whole-trial solve raised the frames within the residual limits from 21 to 35\% at five times the
+row in Equation~\eqref{eq:stages} that hands the load from one foot to the other across double support makes each
+foot's force follow its plate: on 14 trials of subjects 2 to 4 the per-foot root-mean-square error falls from 16.1 to
+13.2\% of body weight in walking and from 13.5 to 6.1\% in squats, at a pelvis residual moment 7 to 11\,N\,m higher.
+A whole-trial solve raised the frames within the residual limits from 21 to 35\% at five times the
 time but worsened the moments and EMG agreement, so the next gains lie in the input. Three limitations remain: the cohort holds only healthy adults, GEM-X resamples to 30\,Hz while drop jumps carry the
 largest errors, and the calibration in use lacks a recorded held-out score.
 % ad7e8c6: motor issue #1 comment 6962132074 (held-out Cam1 walking n = 18: 17.2 -> 15.1). 6d72d73: #1 comment
-% 6980387981 (13 trials, subjects 2-4, Cam1: squats per-foot RMSE 21.2 -> 13.5). Neither is in the full-cohort
+% 6980387981 (13 trials, subjects 2-4, Cam1: squats per-foot RMSE 21.2 -> 13.5). Hand-over split 4799331: #1 comment 6985456815 (14 trials, subjects 2-4, Cam1, 175ab04 -> 4799331: RMSE walking 16.1 -> 13.2, squats 13.5 -> 6.1, sit-to-stand 17.4 -> 11.3, drop jump 30.5 -> 26.6; left-share MAE walking 0.184 -> 0.062; residual moment +7 to +11 N m; dip and landing peaks from the input's CoM acceleration). Neither is in the full-cohort
 % results above; drop jumps 19.9 -> 19.8 (#1 comment 6962132074); 6d72d73 against ad7e8c6, SPLIT swept on the same 13
 % trials, pelvis residual moment +1.5 to +6 N m (#1 comment 6980387981). Whole-trial solve:
 % evidence/motor-labval-2026-11-09.txt (frames within, all trials 0.349 against 0.206, envelope 0.396 against 0.203;
