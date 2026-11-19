@@ -65,6 +65,13 @@ Plans and reports for agents stay on the issue; the owner gets only the decision
 - **Patient data never.** No recording, image, measure or derived file of a patient or study participant goes into this
   repository, its history, its issues or its paper's evidence. Public datasets are referenced by name and fetched under
   their own licence; the files stay out of git.
+- **Data lives in the bucket, never on a local disk (hard rule, owner 2026-11-19: "everything lives in the bucket
+  instead of my local", "fix everywhere").** On every machine (his PC, a pod, a rented machine) datasets, inputs,
+  results and models are read from and written to object storage; a local disk holds only tools, the OS, caches with
+  a size cap and tmp files deleted when their job ends. `motor.run` writes where its caller says: the caller (a
+  cluster job, a validation run) puts its outputs in the bucket, not in a folder of this PC. An agent job's scratch
+  is emptied after the job ends by the shared `disk_keep.py` hook, all but the paths its `tmp/KEEP` names.
+  `docs/bible.md#architecturevalidation`.
 - **Never the owner's patented method** (arXiv:2607.17639, the owner's patent application NL4001444; MOTOR is public
   MIT): no swing-twist split into calibrated axes, no per-joint calibration table of axes, weights and offsets, no
   regression of joint angles against a reference. MOTOR's angles are MyoFullBody's own coordinates after its fit.

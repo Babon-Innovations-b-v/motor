@@ -5,6 +5,7 @@
     ".claude/hooks/call_efficiency.py": "dd2b798c7ea598a18530fd715c96e882c58b5bf81d10e7cf0e8c79079e094dcf",
     ".claude/hooks/checkout_current.py": "9ef7ffdd236e3e99a59f2d4835160cc592b7bed74045462c35cbea0501195288",
     ".claude/hooks/commit_guard.py": "3fe4d1cc6772a7fbd3b5ced707040a35312acb4daa051e2e061c2b0db1f057a5",
+    ".claude/hooks/disk_keep.py": "984ed83cc88be622c3a3dde603dbee820cd13fcbbdc23ab07ea8ae3f05af3dbc",
     ".claude/hooks/dispatch.py": "8d23b1b965419147b3ef754196cf1c0d639c5fea817122cff2685fd6c0085734",
     ".claude/hooks/issue_guard.py": "d99365fb04e8424e497dd6a4b616f116be9a240ba401484a942aca61ad117aae",
     ".claude/hooks/leftover_guard.py": "e4d3434e4db0ce326c181f678a8200cdd8a264047b223b3414cbc2d42d8a6ceb",

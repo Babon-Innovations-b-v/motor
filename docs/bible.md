@@ -83,7 +83,8 @@ and two-camera), the only comparable state of the art. Every measure is reported
 
 There is no separate held-out section: the comparison is the proof. Until the solver is validated, every result in
 the paper is a gap. LabValidation is fetched from its source under its own licence and never committed; no recording
-of a patient or participant enters this repository.
+of a patient or participant enters this repository. The dataset, every run's outputs and the tables made from them
+live in object storage, read and written there by the runs; no copy is kept on a local disk (owner, 2026-11-19).
 
 ## build/release
 
