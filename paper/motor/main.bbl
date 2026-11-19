@@ -213,40 +213,6 @@ Katherine R.~S. Holzbaur, Wendy~M. Murray, and Scott~L. Delp.
   829--840, 2005.
 \newblock \doi{10.1007/s10439-005-3320-7}.
 
-\bibitem[Wu et~al.(2002)Wu, Siegler, Allard, et~al.]{wu2002isb}
-Ge~Wu, Sorin Siegler, Paul Allard, et~al.
-\newblock {ISB} recommendation on definitions of joint coordinate system of
-  various joints for the reporting of human joint motion --- part {I}: ankle,
-  hip, and spine.
-\newblock \emph{Journal of Biomechanics}, 35\penalty0 (4):\penalty0 543--548,
-  2002.
-
-\bibitem[Wu et~al.(2005)Wu, van~der Helm, Veeger, et~al.]{wu2005isb}
-Ge~Wu, Frans C.~T. van~der Helm, H.~E. J.~(DirkJan) Veeger, et~al.
-\newblock {ISB} recommendation on definitions of joint coordinate systems of
-  various joints for the reporting of human joint motion --- part {II}:
-  shoulder, elbow, wrist and hand.
-\newblock \emph{Journal of Biomechanics}, 38\penalty0 (5):\penalty0 981--992,
-  2005.
-
-\bibitem[Jacobson et~al.(2013)Jacobson, Kavan, and
-  Sorkine-Hornung]{jacobson2013winding}
-Alec Jacobson, Ladislav Kavan, and Olga Sorkine-Hornung.
-\newblock Robust inside-outside segmentation using generalized winding numbers.
-\newblock \emph{ACM Transactions on Graphics}, 32\penalty0 (4):\penalty0
-  33:1--33:12, 2013.
-
-\bibitem[Zakka(2024)]{mink}
-Kevin Zakka.
-\newblock {mink}: Python inverse kinematics based on {MuJoCo}, 2024.
-\newblock URL \url{https://github.com/kevinzakka/mink}.
-\newblock Apache-2.0.
-
-\bibitem[Winter(2009)]{winter2009biomechanics}
-David~A. Winter.
-\newblock \emph{Biomechanics and Motor Control of Human Movement}.
-\newblock Wiley, 4 edition, 2009.
-
 \bibitem[Wang et~al.(2025)]{wang2025moge2}
 Ruicheng Wang et~al.
 \newblock {MoGe-2}: Accurate monocular geometry with metric scale and sharp
@@ -281,6 +247,40 @@ Katherine~R. Saul, Xiao Hu, Craig~M. Goehler, Meghan~E. Vidt, Melissa Daly,
 \newblock \emph{Computer Methods in Biomechanics and Biomedical Engineering},
   18\penalty0 (13):\penalty0 1445--1458, 2015.
 \newblock \doi{10.1080/10255842.2014.916698}.
+
+\bibitem[Wu et~al.(2002)Wu, Siegler, Allard, et~al.]{wu2002isb}
+Ge~Wu, Sorin Siegler, Paul Allard, et~al.
+\newblock {ISB} recommendation on definitions of joint coordinate system of
+  various joints for the reporting of human joint motion --- part {I}: ankle,
+  hip, and spine.
+\newblock \emph{Journal of Biomechanics}, 35\penalty0 (4):\penalty0 543--548,
+  2002.
+
+\bibitem[Wu et~al.(2005)Wu, van~der Helm, Veeger, et~al.]{wu2005isb}
+Ge~Wu, Frans C.~T. van~der Helm, H.~E. J.~(DirkJan) Veeger, et~al.
+\newblock {ISB} recommendation on definitions of joint coordinate systems of
+  various joints for the reporting of human joint motion --- part {II}:
+  shoulder, elbow, wrist and hand.
+\newblock \emph{Journal of Biomechanics}, 38\penalty0 (5):\penalty0 981--992,
+  2005.
+
+\bibitem[Jacobson et~al.(2013)Jacobson, Kavan, and
+  Sorkine-Hornung]{jacobson2013winding}
+Alec Jacobson, Ladislav Kavan, and Olga Sorkine-Hornung.
+\newblock Robust inside-outside segmentation using generalized winding numbers.
+\newblock \emph{ACM Transactions on Graphics}, 32\penalty0 (4):\penalty0
+  33:1--33:12, 2013.
+
+\bibitem[Zakka(2024)]{mink}
+Kevin Zakka.
+\newblock {mink}: Python inverse kinematics based on {MuJoCo}, 2024.
+\newblock URL \url{https://github.com/kevinzakka/mink}.
+\newblock Apache-2.0.
+
+\bibitem[Winter(2009)]{winter2009biomechanics}
+David~A. Winter.
+\newblock \emph{Biomechanics and Motor Control of Human Movement}.
+\newblock Wiley, 4 edition, 2009.
 
 \bibitem[S{\'a}r{\'a}ndi et~al.(2021)S{\'a}r{\'a}ndi, Linder, Arras, and
   Leibe]{sarandi2021metrabs}
