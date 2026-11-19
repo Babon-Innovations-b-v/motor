@@ -224,13 +224,14 @@ cameras at $\pm45\dg$ (Appendix~\ref{app:protocol}); OpenCap's figures cover ten
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.92\linewidth]{figures/summary.pdf}
-\caption{MOTOR from one camera (blue; Cam1 and Cam3 pooled) beside OpenCap's published two-camera results (grey;
-diamond: OpenCap Monocular, no drop jumps): MAE of joint angles (MOTOR 15 angles, OpenCap 18), feet-summed ground
-force and joint moments, and solve time per recording (MOTOR on one L4 without pose estimation; OpenCap's recorded solves).}
+\includegraphics[width=\linewidth]{figures/summary.pdf}
+\caption{Mean absolute error against the laboratory per activity, and solve time per recording. MOTOR pools its runs
+from the two $\pm45\dg$ cameras and scores 15 angles (OpenCap 18); OpenCap Monocular reports angles only, without drop
+jumps. Ground reaction force (GRF) is both feet summed. MOTOR's time is on one L4 GPU without pose estimation;
+OpenCap's are its recorded solves.}
 \label{fig:summary}
 \end{figure}
-% data: comparison-2026-11-09.txt "Cam1+Cam3" (angles 4.48/6.13/5.94/6.14/5.67/5.52; vertical 14.32/6.55/10.63/21.65/
+% drawn by figures/summary/plot.py. data: comparison-2026-11-09.txt "Cam1+Cam3" (angles 4.48/6.13/5.94/6.14/5.67/5.52; vertical 14.32/6.55/10.63/21.65/
 % 13.29/10.50; anterior 11.54/3.86/4.84/5.69/6.48/6.75; medio-lateral 3.30/3.81/3.85/2.86/3.45/3.65; moments
 % 1.79/1.66/1.61/3.61/2.17/1.69) and its last section (Uhlrich et al. 2023 Table 1; Monocular 4.8); time:
 % labval-final-2026-11-07.txt (66.214 s, 34.843 to 788.668) and #98 comment 6696117098 (4196, 4096, 2635 s).
