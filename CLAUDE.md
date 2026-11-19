@@ -45,6 +45,7 @@ Per-area overlays: `<area>/CLAUDE.md` loads when files in its directory are touc
 - **Never wait in the foreground.** Anything that takes minutes (a GPU solve, a cloud run, the full suite) runs with
   the Bash tool's `run_in_background`, or detached with one result line at the end; `wait_guard.py` blocks foreground
   sleeps and poll loops.
+- **A sub-agent returns and is closed; it never waits (hard rule; owner, 2026-11-19: "sub agents getting stuck or just not being shut down when done").** A sub-agent runs what ends within a few minutes in the foreground and never ends its turn on its own background work (a `run_in_background` command or a Monitor): that keeps it open and idle until the work ends, often hours. Anything longer it starts detached (`setsid nohup <command> > <log> 2>&1 < /dev/null &`) and returns its final report with the pid, the log and the command that checks it; the coordinating session watches that with Monitor and gives the next step to a fresh agent. The session that started an agent stops it (TaskStop) the moment its final report arrives. `.claude/hooks/agent_close.py` gives every sub-agent this rule when it starts and tells the coordinating session which finished agents to close; it never blocks.
 - **Code index**: the `index` MCP server (`search_graph`, `query_graph`, `search_code`); ask it before a repo-wide grep.
 
 Fresh box: `bash .claude/scripts/bootstrap.sh` links Claude's memory folder, sets the repo's git hooks, and builds the

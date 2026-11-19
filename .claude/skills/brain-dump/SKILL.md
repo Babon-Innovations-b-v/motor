@@ -35,7 +35,8 @@ on the user's behalf. *Done when every line sits in exactly one list.*
 `CLAUDE.md` names (load them first if they arrive deferred; a session that skips that sees no
 tools) and put each line to them: what the repo already holds on a line is that line's first finding, and the
 agents start from it. Every agent brief says the same, because a subagent starts with nothing
-loaded.
+loaded. Each agent returns its findings and closes: it never ends its turn on background work of
+its own, and the session closes it (TaskStop) the moment its report arrives.
 
 One `Workflow`, parallel agents, one distinct angle each, returning structured findings where
 **every claim carries a URL, a repo path or an issue number**. Give one agent the job of finding

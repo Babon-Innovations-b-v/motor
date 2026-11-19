@@ -14,7 +14,7 @@ A question that asks for facts rather than for work is not a task: a status ques
 ## Before asking anything (orient)
 
 1. Read the user's prompt.
-2. **Do the repo's own orient additions first, before you read or search anything else.** Root `CLAUDE.md` may name them (index or search tools to load and ask before opening files or calling `gh`, a topic-to-chapter map, which overlays bind a path). Load those tools now and put the prompt's own question to them; every later step that reads a file, a chapter or an issue goes through them first, and `gh`, `grep` or `cat` only fills what they cannot answer. A step the repo names is part of orient, not an option, and it comes first because a session follows this list in order: placed after the issue search, it was skipped.
+2. **Do the repo's own orient additions first, before you read or search anything else.** Root `CLAUDE.md` may name them (index or search tools to load and ask before opening files or calling `gh`, a topic-to-chapter map, which overlays bind a path). Load those tools now and put the prompt's own question to them; every later step that reads a file, a chapter or an issue goes through them first, and `gh`, `grep` or `cat` only fills what they cannot answer. A step the repo names is part of orient, not an option, and it comes first because a session follows this list in order: placed after the issue search, it was skipped. **Ask once per surface the prompt names, all in one turn**: each app, each system, each appendix of a pasted document (a consent form, a privacy promise) gets its own question to the index. One word for a many-sided prompt leaves the other surfaces dark, and their questions then go to the user instead.
 3. Read `.claude/soul.md` (voice + hard rules).
 4. Read root `CLAUDE.md`.
 5. Read `CONTEXT.md` (the canonical domain glossary, repo root).
@@ -50,7 +50,7 @@ First reply = one sharp question, plus one line of context only if needed. No su
 
 ## During the session
 
-Interview the user relentlessly about every aspect of the plan until you reach a shared understanding. Walk down each branch of the design tree, resolving dependencies one-by-one. For each question, give your recommended answer. **Ask one question at a time, waiting for the answer before the next** — asking multiple questions at once is bewildering. Every reply stays short: one question, minimal context, then stop.
+Interview the user relentlessly about every aspect of the plan until you reach a shared understanding. Walk down each branch of the design tree, resolving dependencies one-by-one. For each question, give your recommended answer. **Check before you ask**: before a question goes to the user, put its subject to the repo's index (orient step 2) and search the code it names; ask only if neither settles it. A question whose answer is already built or already decided costs the user a round-trip and shows you did not look. **Ask one question at a time, waiting for the answer before the next** — asking multiple questions at once is bewildering. Every reply stays short: one question, minimal context, then stop.
 
 ### Challenge against the glossary
 
