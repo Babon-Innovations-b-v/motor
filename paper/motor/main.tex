@@ -147,27 +147,25 @@ calibration therefore tunes these constants, which every body shares, on 21 synt
 each perform seven clips, for which the right answer is known: bones that lie inside the skin and segments that turn
 with the input. Collecting the landmarks' offsets and weights in one vector $z$ of scaled unknowns, it solves
 \begin{equation}
-\min_{z^{\min}\le z\le z^{\max}}\frac12\Bigl[\sum_{c}\Bigl(\varpi_{c,D}^{2}\sum_{r}D_{c,r}(z)^2
-+\varpi_{c,\Theta}^{2}\sum_{g}\Theta_{c,g}(z)^2\Bigr)+\sum_{i\in\mathcal{P}}\Bigl(\frac{\ell_0 z_i}{\sigma_0}\Bigr)^2\Bigr],
+\min_{z}\;\sum_{c}\Bigl(\sum_{r}\tilde D_{c,r}(z)^2+\sum_{g}\tilde\Theta_{c,g}(z)^2\Bigr)+\sum_{i}\Bigl(\frac{\ell_0 z_i}{\sigma_0}\Bigr)^2,
 \label{eq:calibration}
 \end{equation}
-where $D_{c,r}$ is how deep the bones of region $r$ lie outside the skin in case $c$, $\Theta_{c,g}$ is the rotation
-error of bone group $g$, the weights $\varpi$ make both kinds of error count equally, and the last term keeps each
+where $\tilde D_{c,r}$ is how deep the bones of region $r$ lie outside the skin in case $c$ and $\tilde\Theta_{c,g}$ the
+rotation error of bone group $g$, each divided by its value at the start so that both kinds count equally, $z$ stays
+within bounds, and the last term keeps each
 offset $\ell_0 z_i$ near its starting place ($\ell_0=5$\,mm, $\sigma_0=10$\,mm). No measured joint angle enters it, and a result is kept only when bodies held out of
 the tuning score within 10\% of the tuned ones.
 
 At inference time, the solver first fits the person's own landmark offsets $\theta$ from about 30 frames and then fits
 every frame $t$, subject to the model's joint couplings and limits, by minimising
 \begin{equation}
-\begin{gathered}
-E_t(q)=\frac{1}{N_g}\sum_{g=1}^{N_g}\bigl\lVert\operatorname{Log}\bigl(R_g(q)^{\top}\hat R_{g,t}\bigr)\bigr\rVert^2
-+\lambda_m\sum_{m}\frac{w_m}{\sum_k w_k}\bigl\lVert p_m(q;\theta)-\hat x_{m,t}\bigr\rVert^2
-+\frac{\lambda_s}{N_b}\sum_{b=1}^{N_b}\bigl\lVert d_{b,t}(q)\bigr\rVert^2 .
-\end{gathered}
+E_t(q)=\sum_{g}\bigl\lVert\operatorname{Log}\bigl(R_g(q)^{\top}\hat R_{g,t}\bigr)\bigr\rVert^2
++\lambda_m\sum_{m}w_m\bigl\lVert p_m(q)-\hat x_{m,t}\bigr\rVert^2
++\lambda_s\sum_{b}\bigl\lVert d_{b,t}(q)\bigr\rVert^2 ,
 \label{eq:fit}
 \end{equation}
-Here $q$ are the model's joint coordinates, and $\lambda_m$ and $\lambda_s$ weigh the landmark and skin terms against the
-rotations. The first term matches the rotation $R_g$ of each bone group to that of its SOMA segment, $\hat R_{g,t}$; the second
+Here $q$ are the model's joint coordinates, each sum is averaged over its terms, and $\lambda_m$ and $\lambda_s$ weigh
+the landmark and skin terms against the rotations. The first term matches the rotation $R_g$ of each bone group to that of its SOMA segment, $\hat R_{g,t}$; the second
 pulls each landmark's point on the model, $p_m$, towards its point on the skin, $\hat x_{m,t}$, with its calibrated
 weight $w_m$; and the third pushes back in every bone vertex that lies outside the skin by $d_{b,t}$. All frames are
 solved at once on the GPU with Newton and MuJoCo Warp \cite{newton,mujocowarp}, repeatably bit for bit.
