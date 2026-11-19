@@ -98,10 +98,10 @@ def times(ax):
     for end in (low, high):
         ax.plot([end, end], [2.8, 3.2], color=MOTOR, linewidth=1.2, alpha=0.6)
     ax.plot(median, 3, "o", color=MOTOR, markersize=5.5)
-    ax.text(high * 1.18, 3, f"{median:.1f} min (range {low:.1f} to {high:.0f})", va="center", fontsize=FONT,
+    ax.text(high * 1.18, 3, f"{median:.1f} min ({low:.1f} to {high:.0f})", va="center", fontsize=FONT,
             color=INK)
     ax.set_xscale("log")
-    ax.set_xlim(0.4, 400)
+    ax.set_xlim(0.4, 700)
     ax.set_xticks([1, 10, 100])
     ax.set_xticklabels(["1", "10", "100"])
     ax.set_ylim(3.6, -0.6)
