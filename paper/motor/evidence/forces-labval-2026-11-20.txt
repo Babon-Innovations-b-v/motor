@@ -1,0 +1,60 @@
+MOTOR's forces rerun on OpenCap LabValidation beside the 9 November rerun, 2026-11-20 (#98, MOTOR #1).
+Why: the contact fixes (MOTOR ad7e8c6, 6d72d73, 4799331: each foot's contact found from its own lowest skin point,
+each foot its share of the contacts' timeline in double support; in SCORE as 0dd2137ef and after) change how the
+weight is split between the feet; this measures it on the whole cohort against the 9 November rerun.
+Inputs: the same 720 single-camera inputs (labval/measure-final's targets, not refitted from video), each job.json
+rewritten by tools/labval/_job.job_of (the copied jobs lacked "clip rate" and "eased start"; the first try, run
+motor-labval-forces-20261119, ran 705 trials into a KeyError after their fit, EUR 9.17, no result). Four trials left
+out: subject10_squats1 Cam0, Cam1, Cam3, Cam4 (their fit does not stop in 3000 steps; Cam3's ran 2.7 h on 2026-11-08).
+Run: tools/labval/cluster.py, run motor-labval-forces-20261120, jobs of 5 on L4s, under override
+motor-labval-forces-env1 (EUR 26, counted under the env1 cap).
+Before: runs moments-rra and moments-rra-2 (the 9 November rerun, moments-labval-2026-11-09.txt section 3).
+Scoring: both by tools/labval validate --no-run at the same SCORE commit (time shift, OpenCap's filters, moments
+against OpenSim's ID remade by opensim_reference.py), the left share added by SCORE 7d609e8b0 (no other measure
+changed); then this file's script over both runs' report.json, moments.json and out.json.
+
+before 716 trials, after 570, both 570; every row on the 570 both have.
+Columns: per-foot vertical GRF MAE right / left (%BW), |left-share error| (the left foot's share of the vertical
+impulse over the frames the plates carry the body, run minus plates), summed GRF MAE vertical / AP / ML (%BW),
+the matched 15 angles' MAE (deg), OpenCap's 15 moments' MAE (%BW*ht), the pelvis residual (median over trials
+of each trial's median |F| %BW, median |M| %BW*com height, 95th percentile |F| %BW), EMG r (mean over channels
+and trials). GRF filtered as OpenCap, whole trial. Mean over trials (residuals: median).
+
+## all five
+activity      run     trials   right vert    left vert   left share     sum vert       sum ap       sum ml     angles15    moments15   residual F   residual M residual F95        emg r
+drop jump     before     218       16.593       14.832        0.144       19.013        5.671        2.596        5.962        3.635       10.156        9.168       85.031        0.232
+drop jump     after      218       12.591       11.187        0.089       18.606        5.305        2.270        6.113        3.444        7.716        5.885       70.615        0.259
+sit-to-stand  before      72       16.555       16.714        0.142       11.396        4.628        3.315        5.390        1.527        0.397        2.941        9.410        0.209
+sit-to-stand  after       72        6.988        7.366        0.028       11.954        4.206        2.586        5.654        1.632        1.043        2.680        7.042        0.281
+squats        before      66       17.397       16.579        0.108        6.130        3.479        3.394        5.779        1.551        0.868        1.187        8.513        0.167
+squats        after       66       12.974       12.351        0.098        6.333        2.925        2.876        6.125        2.378        2.565        3.183        6.670        0.198
+walking       before     214       19.000       20.104        0.091       17.072       11.460        3.108        4.602        1.747        7.672       10.490       21.513        0.264
+walking       after      214       18.073       18.332        0.082       16.418        9.876        3.064        4.663        1.410        3.624        4.414       12.766        0.290
+all           before     570       17.585       17.251        0.120       15.830        7.459        2.972        5.358        2.418        7.182        9.002       24.798        0.234
+all           after      570       13.986       13.522        0.079       15.523        6.607        2.678        5.512        2.328        4.085        4.596       15.341        0.266
+mean of 4     before               17.386       17.057        0.121       13.403        6.309        3.103        5.433        2.115        4.773        5.947       31.117        0.218
+mean of 4     after                12.656       12.309        0.074       13.328        5.578        2.699        5.639        2.216        3.737        4.040       24.273        0.257
+
+## Cam1+Cam3
+activity      run     trials   right vert    left vert   left share     sum vert       sum ap       sum ml     angles15    moments15   residual F   residual M residual F95        emg r
+drop jump     before      87       18.831       16.917        0.163       21.406        5.703        2.919        6.047        3.745       12.651        9.250       83.228        0.218
+drop jump     after       87       13.710       12.006        0.086       20.826        5.341        2.431        6.173        3.486        9.284        6.705       67.797        0.253
+sit-to-stand  before      29       19.383       19.156        0.178       10.475        4.962        3.979        5.933        1.641        0.530        3.217       11.508        0.184
+sit-to-stand  after       29        6.982        7.093        0.031       11.416        4.319        2.924        6.213        1.677        1.148        3.155        9.143        0.287
+squats        before      26       20.241       19.298        0.126        6.378        3.715        3.915        6.126        1.652        0.497        0.856        8.704        0.149
+squats        after       26       13.101       12.461        0.097        6.571        3.010        3.090        6.530        2.240        2.889        3.902        7.687        0.193
+walking       before      86       16.991       18.813        0.082       14.514       11.490        3.211        4.557        1.767        7.756       10.747       22.223        0.278
+walking       after       86       16.012       17.697        0.064       14.628        9.749        3.049        4.623        1.390        3.612        4.442       12.799        0.305
+all           before     228       18.368       18.188        0.130       15.702        7.565        3.277        5.480        2.493        7.302        9.159       24.595        0.228
+all           after      228       13.653       13.579        0.072       15.666        6.608        2.802        5.634        2.323        4.224        4.988       14.918        0.270
+mean of 4     before               18.861       18.546        0.137       13.193        6.468        3.506        5.666        2.202        5.359        6.017       31.416        0.207
+mean of 4     after                12.451       12.314        0.070       13.360        5.605        2.874        5.885        2.198        4.233        4.551       24.356        0.259
+
+## The 146 trials not scored
+The run was stopped by the money guard at 05:08 UTC (its nodes at EUR 15.34 against the EUR 15.30 left under
+override motor-labval-forces-env1: EUR 26 less the first try's EUR 9.17, less 10%), not by a time limit or a fault:
+114 of 144 jobs done in 179 min on 8 L4 nodes, 1217 node minutes, EUR 16.01 (ledger, batch
+motor-labval-forces-20261120); the override's two tries together EUR 25.18 of EUR 26. The 30 jobs left (146 trials,
+among them subject11's squats, squatsAsym and walking) never ran or were cut; every row above is on the 570 both runs
+have, so squats (66 of their trials) and walking (214) lean on the subjects that came back. At this run's EUR 0.14 a
+job, finishing them is about EUR 4.2 on the same nodes.
