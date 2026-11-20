@@ -165,20 +165,13 @@ tuned ones.
 At inference time, the solver first fits the person's own landmark moves from about 30 frames and then fits every
 frame $t$, within the model's joint limits and couplings, as
 \begin{equation}
-q_t=\arg\min_{q}\;E_{\mathrm{rot}}(q)+\lambda_m E_{\mathrm{mark}}(q)+\lambda_s E_{\mathrm{skin}}(q),
+q_t=\arg\min_{q}\;\operatorname*{mean}_{g}\,\theta_g(q)^2+\lambda_m\sum_{m}w_m\,e_m(q)^2+\lambda_s\operatorname*{mean}_{b}\,d_b(q)^2,
 \label{eq:fit}
 \end{equation}
-\begin{equation*}
-E_{\mathrm{rot}}=\frac{1}{N_g}\sum_{g}\bigl\lVert\operatorname{Log}\bigl(R_g(q)^{\top}\hat R_{g,t}\bigr)\bigr\rVert^2,\qquad
-E_{\mathrm{mark}}=\sum_{m}w_m\bigl\lVert p_m(q)-\hat x_{m,t}\bigr\rVert^2,\qquad
-E_{\mathrm{skin}}=\frac{1}{N_b}\sum_{b}\bigl\lVert d_{b,t}(q)\bigr\rVert^2,
-\end{equation*}
-where $q$ are the model's joint coordinates, over $N_g$ bone groups and $N_b$ bone points; the same names as in Eq.~(\ref{eq:calibration}) mean the same errors, now for one frame.
-$E_{\mathrm{rot}}$ matches the rotation $R_g$ of each bone group to that of its SOMA segment, $\hat R_{g,t}$;
-$E_{\mathrm{mark}}$ pulls each landmark on the model, $p_m$, towards its point on the skin, $\hat x_{m,t}$, with its
-calibrated weight $w_m$ (the weights summing to one); and $E_{\mathrm{skin}}$ pushes back in every bone point that lies
-outside the skin by $d_{b,t}$. The calibrated $\lambda_m$ and $\lambda_s$ weigh the landmarks and the skin against the
-rotations. All frames are
+where $q$ are the model's joint coordinates and, in frame $t$, $\theta_g$ is the angle between bone group $g$ and its
+SOMA segment, $e_m$ the distance from landmark $m$ to its point on the skin, and $d_b$ how far bone point $b$ lies
+outside the skin (zero inside). The landmark weights $w_m$ come from the calibration and sum to one; $\lambda_m$ and
+$\lambda_s$ weigh the landmarks and the skin against the rotations. All frames are
 solved at once on the GPU with Newton and MuJoCo Warp \cite{newton,mujocowarp}, repeatably bit for bit.
 
 The forces follow from the fitted motion. MuJoCo's inverse dynamics gives the torques each frame needs; the ground,
