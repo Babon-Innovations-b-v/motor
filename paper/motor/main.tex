@@ -292,17 +292,23 @@ as they are in GEM-X's output.
 % elbow -21.12 / -23.66); elbow-2026-11-07.txt (median -18.5); comparison-2026-11-09.txt (KAM Cam1 1.97, Monocular
 % 0.36); #98 comment 6721835197 (37-44 against 9-16 mm); teaser-2026-11-07.json (90.13 left / 52.93 right).
 
-Two changes made since this run address the division; both have so far been measured on subsets and still await a run
-on the full cohort. The first takes each foot's contact from its lowest skin point above a floor fitted per trial,
-instead of from GEM-X's stance flag, and lowers the per-foot vertical error of 18 held-out walks from 17.2 to 15.1\% of
-body weight. The second adds a row to the static optimisation that hands the load from one
-foot to the other across double support. With it each foot's force follows its plate: on 14 trials of subjects 2 to 4
-the per-foot root-mean-square error falls from 16.1 to 13.2\% of body weight in walking and from 13.5 to 6.1\% in
-squats, although the pelvis residual moment rises by 7 to 11\,N\,m. A whole-trial solve raised the share of frames within the residual limits
+Two changes made since this run address the division. The first takes each foot's contact from its lowest skin point
+above a floor fitted per trial, instead of from GEM-X's stance flag; the second adds a row to the static optimisation
+that hands the load from one foot to the other across double support. Solved again with both on the whole cohort (688
+of the 716 recordings; the run's spending limit stopped the other 28), each foot's vertical force on the 687
+recordings both runs share is off by 14.1\% of body weight instead of 17.6\%, and the error in the left foot's share
+of the load falls from 0.12 to 0.08. The gain is largest when rising from a chair (16.6 to 7.1\%) and smallest in
+walking (20.0 to 18.8\%), while the summed force is unchanged (16.0 against 16.3\%). The pelvis residual falls from a
+median of 7.2 to 4.1\% of body weight and the agreement with EMG rises from $r=0.23$ to 0.26, but the joint moments of
+squats worsen from 1.55 to 2.34\% of body weight times height. A whole-trial solve raised the share of frames within the residual limits
 from 21 to 35\% at five times the cost but worsened the moments and the agreement with EMG, so the next gains lie in
 the input. Three limitations remain: the
 cohort contains only healthy adults, GEM-X resamples every clip to 30\,Hz although drop jumps carry the largest errors,
 and the calibration in use has no recorded held-out score.
+% Full cohort with both changes: evidence/forces-labval-2026-11-20-full.txt ("all five", 687 trials both runs have;
+% per-foot right/left 17.869/17.297 -> 14.419/13.700, mean 17.58 -> 14.06; left share 0.119 -> 0.081; sit-to-stand
+% 16.657/16.493 -> 7.060/7.187; walking 19.617/20.474 -> 18.728/18.954; sum vert 16.296 -> 16.038; residual F 7.247 ->
+% 4.060; EMG r 0.233 -> 0.259; squats moments 1.545 -> 2.338).
 % ad7e8c6: motor issue #1 comment 6962132074 (held-out Cam1 walking n = 18: 17.2 -> 15.1). 6d72d73: #1 comment
 % 6980387981 (13 trials, subjects 2-4, Cam1: squats per-foot RMSE 21.2 -> 13.5). Hand-over split 4799331: #1 comment 6985456815 (14 trials, subjects 2-4, Cam1, 175ab04 -> 4799331: RMSE walking 16.1 -> 13.2, squats 13.5 -> 6.1, sit-to-stand 17.4 -> 11.3, drop jump 30.5 -> 26.6; left-share MAE walking 0.184 -> 0.062; residual moment +7 to +11 N m; dip and landing peaks from the input's CoM acceleration). Neither is in the full-cohort
 % results above; drop jumps 19.9 -> 19.8 (#1 comment 6962132074); 6d72d73 against ad7e8c6, SPLIT swept on the same 13
