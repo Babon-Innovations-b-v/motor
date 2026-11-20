@@ -145,33 +145,40 @@ on each recording (Figure~\ref{fig:method}, Appendix~\ref{app:method}).
 How strongly each landmark should pull, and exactly where it sits on its bone, cannot be measured on a person. The
 calibration therefore tunes these constants, which every body shares, on 21 synthetic SOMA bodies of varied build that
 each perform seven clips, for which the right answer is known: bones that lie inside the skin and segments that turn
-with the input. Collecting the landmarks' offsets and weights in one vector $z$ of scaled unknowns, it solves
+with the input. Writing $\Delta$ for the changes it tunes, each landmark's move on its bone and its weight's change,
+both measured from the anatomical start, it solves
 \begin{equation}
-\min_{z}\;
-\underbrace{\sum_{c,r}\tilde D_{c,r}(z)^2}_{\text{bones outside the skin}}
-+\underbrace{\sum_{c,g}\tilde\Theta_{c,g}(z)^2}_{\text{segment rotation error}}
-+\underbrace{\sum_{i}\bigl(\ell_0 z_i/\sigma_0\bigr)^2}_{\text{offsets near their start}},
+\Delta^\star=\arg\min_{\Delta}\;E_{\mathrm{skin}}(\Delta)+E_{\mathrm{rot}}(\Delta)+E_{\mathrm{start}}(\Delta),
 \label{eq:calibration}
 \end{equation}
+\begin{equation*}
+E_{\mathrm{skin}}=\sum_{c,r}\tilde D_{c,r}^{\,2},\qquad
+E_{\mathrm{rot}}=\sum_{c,g}\tilde\Theta_{c,g}^{\,2},\qquad
+E_{\mathrm{start}}=\sum_{i}\bigl(\Delta_i/\sigma_0\bigr)^2 ,
+\end{equation*}
 where $\tilde D_{c,r}$ is how deep the bones of region $r$ lie outside the skin in case $c$ and $\tilde\Theta_{c,g}$ the
-rotation error of bone group $g$, each divided by its value at the start so that both kinds count equally, $z$ stays
-within bounds, and the last term keeps each
-offset $\ell_0 z_i$ near its starting place ($\ell_0=5$\,mm, $\sigma_0=10$\,mm). No measured joint angle enters it, and a result is kept only when bodies held out of
-the tuning score within 10\% of the tuned ones.
+rotation error of bone group $g$, each divided by its value at the start so that both count equally, and
+$E_{\mathrm{start}}$ keeps each landmark's move $\Delta_i$ near zero ($\sigma_0=10$\,mm) within its bounds. No
+measured joint angle enters it, and a result is kept only when bodies held out of the tuning score within 10\% of the
+tuned ones.
 
-At inference time, the solver first fits the person's own landmark offsets $\theta$ from about 30 frames and then fits
-every frame $t$, subject to the model's joint couplings and limits, by minimising
+At inference time, the solver first fits the person's own landmark moves from about 30 frames and then fits every
+frame $t$, within the model's joint limits and couplings, as
 \begin{equation}
-E_t(q)=
-\underbrace{\sum_{g}\bigl\lVert\operatorname{Log}\bigl(R_g(q)^{\top}\hat R_{g,t}\bigr)\bigr\rVert^2}_{\text{segment rotations}}
-+\lambda_m\underbrace{\sum_{m}w_m\bigl\lVert p_m(q)-\hat x_{m,t}\bigr\rVert^2}_{\text{landmarks on the skin}}
-+\lambda_s\underbrace{\sum_{b}\bigl\lVert d_{b,t}(q)\bigr\rVert^2}_{\text{bones inside the skin}},
+q_t=\arg\min_{q}\;E_{\mathrm{rot}}(q)+\lambda_m E_{\mathrm{mark}}(q)+\lambda_s E_{\mathrm{skin}}(q),
 \label{eq:fit}
 \end{equation}
-Here $q$ are the model's joint coordinates, each sum is averaged over its terms, and $\lambda_m$ and $\lambda_s$ weigh
-the landmark and skin terms against the rotations. The first term matches the rotation $R_g$ of each bone group to that of its SOMA segment, $\hat R_{g,t}$; the second
-pulls each landmark's point on the model, $p_m$, towards its point on the skin, $\hat x_{m,t}$, with its calibrated
-weight $w_m$; and the third pushes back in every bone vertex that lies outside the skin by $d_{b,t}$. All frames are
+\begin{equation*}
+E_{\mathrm{rot}}=\frac{1}{N_g}\sum_{g}\bigl\lVert\operatorname{Log}\bigl(R_g(q)^{\top}\hat R_{g,t}\bigr)\bigr\rVert^2,\qquad
+E_{\mathrm{mark}}=\sum_{m}w_m\bigl\lVert p_m(q)-\hat x_{m,t}\bigr\rVert^2,\qquad
+E_{\mathrm{skin}}=\frac{1}{N_b}\sum_{b}\bigl\lVert d_{b,t}(q)\bigr\rVert^2,
+\end{equation*}
+where $q$ are the model's joint coordinates, over $N_g$ bone groups and $N_b$ bone points; the same names as in Eq.~(\ref{eq:calibration}) mean the same errors, now for one frame.
+$E_{\mathrm{rot}}$ matches the rotation $R_g$ of each bone group to that of its SOMA segment, $\hat R_{g,t}$;
+$E_{\mathrm{mark}}$ pulls each landmark on the model, $p_m$, towards its point on the skin, $\hat x_{m,t}$, with its
+calibrated weight $w_m$ (the weights summing to one); and $E_{\mathrm{skin}}$ pushes back in every bone point that lies
+outside the skin by $d_{b,t}$. The calibrated $\lambda_m$ and $\lambda_s$ weigh the landmarks and the skin against the
+rotations. All frames are
 solved at once on the GPU with Newton and MuJoCo Warp \cite{newton,mujocowarp}, repeatably bit for bit.
 
 The forces follow from the fitted motion. MuJoCo's inverse dynamics gives the torques each frame needs; the ground,
