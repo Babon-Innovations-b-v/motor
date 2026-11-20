@@ -165,9 +165,14 @@ tuned ones.
 At inference time, the solver first fits the person's own landmark moves from about 30 frames and then fits every
 frame $t$, within the model's joint limits and couplings, as
 \begin{equation}
-q_t=\arg\min_{q}\;\operatorname*{mean}_{g}\,\theta_g(q)^2+\lambda_m\sum_{m}w_m\,e_m(q)^2+\lambda_s\operatorname*{mean}_{b}\,d_b(q)^2,
+q_t=\arg\min_{q}\;E_{\mathrm{rot}}(q)+\lambda_m E_{\mathrm{mark}}(q)+\lambda_s E_{\mathrm{skin}}(q),
 \label{eq:fit}
 \end{equation}
+\begin{equation*}
+E_{\mathrm{rot}}=\operatorname*{mean}_{g}\,\theta_g^2,\qquad
+E_{\mathrm{mark}}=\sum_{m}w_m\,e_m^2,\qquad
+E_{\mathrm{skin}}=\operatorname*{mean}_{b}\,d_b^2,
+\end{equation*}
 where $q$ are the model's joint coordinates and, in frame $t$, $\theta_g$ is the angle between bone group $g$ and its
 SOMA segment, $e_m$ the distance from landmark $m$ to its point on the skin, and $d_b$ how far bone point $b$ lies
 outside the skin (zero inside). The landmark weights $w_m$ come from the calibration and sum to one; $\lambda_m$ and
