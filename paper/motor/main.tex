@@ -152,11 +152,11 @@ landmark positions, and solves
 \label{eq:calibration}
 \end{equation}
 \begin{equation*}
-\Delta B=\text{bone depth outside the skin},\qquad
+\Delta B=\text{bone vertex depth outside the skin},\qquad
 \Delta R=R_{\mathrm{bone}}-R_{\mathrm{SOMA}},\qquad
 \Delta L=L-L_{\mathrm{anatomical}},
 \end{equation*}
-over every case $c$ (a body in a clip), bone region $b$, bone group $g$ and landmark $m$. $\Delta B$ and $\Delta R$
+over every case $c$ (a body in a clip), bone region $b$ (its vertices together), bone group $g$ and landmark $m$. $\Delta B$ and $\Delta R$
 are each divided by their value at the start, so that both count equally, and the last term keeps each landmark
 within about $\sigma_0=10$\,mm of its anatomical place. No
 measured joint angle enters it, and a result is kept only when bodies held out of the tuning score within 10\% of the
@@ -171,10 +171,10 @@ q_t=\arg\min_{q}\;\operatorname*{mean}_{g}\Delta R_g^2+\lambda_m\sum_{m}w_m\,\De
 \begin{equation*}
 \Delta R=R_{\mathrm{bone}}-R_{\mathrm{SOMA}},\qquad
 \Delta x=L-x_{\mathrm{skin}},\qquad
-\Delta B=\text{bone depth outside the skin},
+\Delta B=\text{bone vertex depth outside the skin},
 \end{equation*}
 where $q$ are the model's joint coordinates in frame $t$; $\Delta R$ is measured as the angle between the two
-rotations, $\Delta x$ as a distance, and $\Delta B$ as how far each bone point lies outside the skin (zero inside). The
+rotations, $\Delta x$ as a distance, and $\Delta B$ as how far each bone vertex lies outside the skin (zero inside). The
 landmark weights $w_m$ come from the calibration and sum to one; $\lambda_m$ and $\lambda_s$ weigh the landmarks and
 the skin against the rotations. All frames are
 solved at once on the GPU with Newton and MuJoCo Warp \cite{newton,mujocowarp}, repeatably bit for bit.
