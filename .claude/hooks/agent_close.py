@@ -8,8 +8,10 @@ open until that work ends. And a sub-agent's final report arrived, but the sessi
 
 - ``SubagentStart``: every sub-agent gets the hand-back rule (``HAND_BACK``) as context, whatever its brief says.
 - ``PreToolUse`` on a sub-agent's ``run_in_background`` Bash call: the same rule once more, beside that call.
-- ``SubagentStop`` of a background sub-agent: the agent is written down as finished, or as holding its own background
-  work when a background command or Monitor it started has not ended.
+- ``SubagentStop`` of a background sub-agent: the agent is written down only when it holds its own background work (a
+  background command or Monitor it started has not ended). One that finished with none is closed already: its
+  completion notice is its end, and TaskStop answers "not running" (#145 in the source repository: finished agents
+  and workflow agents named on every prompt hid the real ones). A workflow's agent is never written down.
 - ``PostToolUse`` and ``UserPromptSubmit`` in the session that started it: the session is told to close each agent
   written down (TaskStop), at most ``REMINDERS`` times an agent.
 - ``PreToolUse`` on TaskStop, or the agent starting again (``SubagentStart``): the agent is crossed off.
@@ -92,10 +94,15 @@ def write_down(payload):
     """SubagentStop: record a background sub-agent as finished or as holding its own background work."""
     agent, transcript = payload.get("agent_id"), payload.get("agent_transcript_path")
     folder = ledger(payload)
-    if not agent or not ran_in_background(transcript) or (folder / f"{agent}.closed").exists():
+    kind = str(payload.get("agent_type") or "")
+    if not agent or "workflow" in kind.lower() or not ran_in_background(transcript) \
+            or (folder / f"{agent}.closed").exists():
+        return
+    held = held_work(transcript)
+    if not held:
         return
     folder.mkdir(parents=True, exist_ok=True)
-    record = {"agent": agent, "type": payload.get("agent_type") or "", "held": held_work(transcript), "said": 0}
+    record = {"agent": agent, "type": kind, "held": held, "said": 0}
     (folder / f"{agent}.json").write_text(json.dumps(record))
 
 

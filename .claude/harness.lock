@@ -1,7 +1,7 @@
 {
-  "commit": "af5e08f72c0691413ee7b8ca1df33add3b1ab914",
+  "commit": "d7ea2f19ac7f027b0e6514d219bc9121d381542b",
   "files": {
-    ".claude/hooks/agent_close.py": "49045900e0bd5e0fabca01b7f4abb8c951950dbcb2327949a09d9c25e80cd1d2",
+    ".claude/hooks/agent_close.py": "b26fe555ab6d3218cec067c2a948a3c27ceec41a05ccad01030a80b964289a9a",
     ".claude/hooks/call_efficiency.py": "dd2b798c7ea598a18530fd715c96e882c58b5bf81d10e7cf0e8c79079e094dcf",
     ".claude/hooks/checkout_current.py": "9ef7ffdd236e3e99a59f2d4835160cc592b7bed74045462c35cbea0501195288",
     ".claude/hooks/commit_guard.py": "3fe4d1cc6772a7fbd3b5ced707040a35312acb4daa051e2e061c2b0db1f057a5",
@@ -14,7 +14,7 @@
     ".claude/hooks/pre-commit": "7af6fce62c4516afb5a2db0959c49e6348461b8eae0300597fe2da4297799b0a",
     ".claude/hooks/pre-push": "8ecff29b07fd355baa9a788c85aec3f71bfa0a2192b7ab57d7ccf0ef0507a75a",
     ".claude/hooks/prepare-commit-msg": "7559514cd367ff2c36f7b8fbad34684e200a571eec147e24c6c9b8912a94aced",
-    ".claude/hooks/soul_guard.py": "984c99934ad39f1505012b33fb5e1b52a3bdbc672400b2e5f2a3c4edf25399d9",
+    ".claude/hooks/soul_guard.py": "b87af38d4a405cc72681efbcdbca0956c1780ac0c388122f1da44865ef51b46b",
     ".claude/hooks/torn_commit_guard.py": "a889592caca89b7522e946ed9ec0d5ffa85db096d1b6bf03a727495129dec1c3",
     ".claude/hooks/wait_guard.py": "6e44b52bf8cf1e5049d920db368280e106573681371464856445ebc9271a0da2",
     ".claude/index/cbm_clean.py": "61b37fac117d38fe0455adce427e104a5f0e3fa6400e2680c71e4b25923aeab7",
