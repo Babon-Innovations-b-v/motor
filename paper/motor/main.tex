@@ -154,8 +154,9 @@ $v$ should lie inside the skin. With the errors
 where $\angle$ is the angle of the relative rotation and $d_{\mathcal{S}_t}$ the distance of a point outside the
 skin (zero inside it), each frame solves
 \begin{equation}
-q_t=\arg\min_{q\in\mathcal{Q}}\;\frac{1}{N_g}\sum_{g}\Delta R_g^2+\lambda_L\sum_{m}\bar w_m\,\Delta x_m^2
-+\frac{\lambda_S}{N_v}\sum_{v}\Delta B_v^2,
+q_t=\arg\min_{q\in\mathcal{Q}}\;\underbrace{\frac{1}{N_g}\sum_{g}\Delta R_g^2}_{\text{rotation error}}
++\underbrace{\lambda_L\sum_{m}\bar w_m\,\Delta x_m^2}_{\text{marker distance}}
++\underbrace{\frac{\lambda_S}{N_v}\sum_{v}\Delta B_v^2}_{\substack{\text{bone vertices}\\\text{outside the skin}}},
 \label{eq:fit}
 \end{equation}
 where $\mathcal{Q}$ is the set of coordinates that respect the model's joint limits and couplings, $\bar w_m$ are the
@@ -170,8 +171,9 @@ anatomical position, the marker weights, the positions of the segment ends and t
 $\lambda_L$. Over every case $c$ (one body in one clip), body region $r$ and bone group $g$, the calibration solves the
 bounded problem
 \begin{equation}
-\phi^\star=\arg\min_{\phi}\;\frac{1}{E_B^0}\sum_{c,r}\Delta B_{c,r}^2+\frac{1}{E_R^0}\sum_{c,g}\Delta R_{c,g}^2
-+\sum_{m}\frac{\lVert\Delta L_m\rVert^2}{\ell^2},
+\phi^\star=\arg\min_{\phi}\;\underbrace{\frac{1}{E_B^0}\sum_{c,r}\Delta B_{c,r}^2}_{\substack{\text{bone vertices}\\\text{outside the skin}}}
++\underbrace{\frac{1}{E_R^0}\sum_{c,g}\Delta R_{c,g}^2}_{\text{rotation error}}
++\underbrace{\sum_{m}\frac{\lVert\Delta L_m\rVert^2}{\ell^2}}_{\text{landmark move}},
 \label{eq:calibration}
 \end{equation}
 where the errors are those of Equation~\eqref{eq:fit} at the poses the solver returns with the constants $\phi$,
