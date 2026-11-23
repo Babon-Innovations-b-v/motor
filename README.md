@@ -86,7 +86,7 @@ validation (a still pose has no movement to compare against).
 
 ## Validation
 
-MOTOR is validated on OpenCap's public LabValidation dataset (single-camera video, against the lab's motion capture,
+MOTOR is being validated on OpenCap's public LabValidation dataset (single-camera video, against the lab's motion capture,
 force plates and EMG). That pipeline still lives in [SCORE](https://github.com/Babon-Innovations-b-v/score)
 (`tools/labval`), next to the video estimator and cloud runners it uses.
 
