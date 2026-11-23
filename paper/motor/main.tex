@@ -184,7 +184,8 @@ is kept only when bodies held out of the tuning score within 10\% of the tuned o
 \paragraph{Solver.} On a recording, the solver first estimates the person's own constants, a move of each landmark on
 its bone and of each inner joint within its bone group, from about 30 frames together (Appendix~\ref{sec:person}),
 and then solves Equation~\eqref{eq:fit} for every frame. All frames are solved at once on the GPU with Newton and
-MuJoCo Warp \cite{newton,mujocowarp}, and two runs agree bit for bit.
+MuJoCo Warp \cite{newton,mujocowarp}, deterministically: running the same recording again reproduces every number
+bit for bit.
 
 \paragraph{Forces.} The forces are estimated on the fitted path. MuJoCo's inverse dynamics gives the generalised
 forces that each frame requires. The ground, a plane fitted to the floor seen in the video \cite{wang2025moge2},
