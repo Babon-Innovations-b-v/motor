@@ -136,67 +136,65 @@ MuJoCo Warp.
 \paragraph{Problem.} For each frame $t$ of a recording, MOTOR receives a SOMA body: its posed skin $\mathcal{S}_t$,
 the global rotation of every body segment and the joint centres. It estimates the joint coordinates $q_t$ of
 MyoFullBody \cite{caggiano2022myosuite,li2026musclemimic,holzbaur2005upper}, a whole-body musculoskeletal model with
-416 muscles whose bone groups are sized to the person's SOMA segments, and, from the fitted path, the ground reaction
+416 muscles sized to the person, and, from the fitted path, the ground reaction
 forces and muscle activations that produce it. Both steps are inverse problems: the kinematics are recovered from the
-observed body, and the forces from the kinematics. The kinematic fit is shared by a calibration, run once and offline,
-and by the solver, run on every recording (Figure~\ref{fig:method}, Appendix~\ref{app:method}).
+observed body, and the forces from the kinematics (Figure~\ref{fig:method}, Appendix~\ref{app:method}).
 
-\paragraph{Kinematic fit.} The model is matched to the input through three errors. Each SOMA segment drives one bone
-group $g$, whose frame bone has the orientation $R_g(q)$ and whose target is the segment's rotation $\hat R_{g,t}$
-composed with a fixed rest alignment $A_g$, read once from the two models at rest. Each marker $m$, an anatomical
-landmark or a segment end, lies at $p_m(q)$ on a bone and at $\hat x_{m,t}$ on the skin. Each sampled bone vertex
-$v$ should lie inside the skin. With the errors
+\paragraph{Kinematic fit.} In every frame, MOTOR poses the model so that it matches the input body as closely as
+possible. A pose is the vector $q$ of the model's joint coordinates, and the allowed poses $\mathcal{Q}$ are those
+within the model's joint limits, with its coupled joints moving together. Three errors measure how far a pose is from
+the input body. The first and main error is the rotation error. Each SOMA segment drives one bone group $g$ of the model; the thigh,
+for example, drives the femur. For a pose $q$, $\Delta R_g(q)$ is the angle by which the group's main bone is turned
+away from the orientation of its segment, after a fixed alignment between the two models at rest
+(Appendix~\ref{app:method}); averaged over the $N_g$ bone groups, these angles give the rotation error $E_R$.
+The second is the marker error. A marker $m$ is a point that both bodies share: an anatomical landmark, such as the
+lateral malleolus, or the end of a segment. $\Delta x_m(q)$ is the distance between the marker's point on the model's
+bone and its point on the SOMA skin; summed with each marker's weight $\bar w_m$ from the calibration, these
+distances give the marker error $E_L$. The third is the skin error, which keeps the bones inside the body. $\Delta B_v(q)$ is how far a vertex $v$ of a bone
+mesh lies outside the SOMA skin, and zero when it lies inside. Averaged over the $N_v$ vertices sampled on all bones,
+these depths give the skin error $E_S$:
 \begin{equation*}
-\Delta R_g=\angle\bigl(R_g(q),\,\hat R_{g,t}A_g\bigr),\qquad
-\Delta x_m=\bigl\lVert p_m(q)-\hat x_{m,t}\bigr\rVert,\qquad
-\Delta B_v=d_{\mathcal{S}_t}\bigl(v(q)\bigr),
+E_R(q)=\frac{1}{N_g}\sum_{g}\Delta R_g(q)^2,\qquad
+E_L(q)=\sum_{m}\bar w_m\,\Delta x_m(q)^2,\qquad
+E_S(q)=\frac{1}{N_v}\sum_{v}\Delta B_v(q)^2.
 \end{equation*}
-where $\angle$ is the angle of the relative rotation and $d_{\mathcal{S}_t}$ the distance of a point outside the
-skin (zero inside it), each frame solves
+The pose of frame $t$ is the allowed pose with the smallest weighted sum of the three errors,
 \begin{equation}
-q_t=\arg\min_{q\in\mathcal{Q}}\;\underbrace{\frac{1}{N_g}\sum_{g}\Delta R_g^2}_{\text{rotation error}}
-+\underbrace{\lambda_L\sum_{m}\bar w_m\,\Delta x_m^2}_{\text{marker distance}}
-+\underbrace{\frac{\lambda_S}{N_v}\sum_{v}\Delta B_v^2}_{\substack{\text{bone vertices}\\\text{outside the skin}}},
+q_t=\arg\min_{q\in\mathcal{Q}}\;E_R(q)+\lambda_L\,E_L(q)+\lambda_S\,E_S(q),
 \label{eq:fit}
 \end{equation}
-where $\mathcal{Q}$ is the set of coordinates that respect the model's joint limits and couplings, $\bar w_m$ are the
-calibrated marker weights normalised to sum to one, and $\lambda_L$ and $\lambda_S$ weigh the markers and the skin
-against the rotations. No measured joint angle enters the objective.
+where the weights $\lambda_L$ and $\lambda_S$ set how much the markers and the skin count against the rotations. No
+measured joint angle enters this fit.
 
-\paragraph{Calibration.} Where each landmark sits on its bone, and how strongly it should pull, cannot be measured on
-a person. These constants, shared by every body, are therefore tuned once on 21 synthetic SOMA bodies of varied build,
-each performing seven clips, for which the correct answer is known: bones that lie inside the skin and bone groups
-that turn with their segments. The calibration constants $\phi$ are each landmark's move $\Delta L_m$ from its
-anatomical position, the marker weights, the positions of the segment ends and two global weights, among them
-$\lambda_L$. Over every case $c$ (one body in one clip), body region $r$ and bone group $g$, the calibration solves the
-bounded problem
+\paragraph{Calibration.} Two things in the fit cannot be measured on a real person: exactly where each landmark sits
+on its bone, and how much each marker should count. MOTOR therefore tunes them once, on 21 synthetic SOMA bodies of
+varied build that each perform seven clips, for which the right outcome is known without any reference joint angle:
+every bone inside the skin, and every bone group turning with its segment. The constants being tuned,
+together called $\phi$, are each landmark's move $\Delta L_m$ away from its anatomical position, the marker weights,
+the positions of the segment ends and two global weights, one of them $\lambda_L$. For a given $\phi$, MOTOR fits
+every clip of every tuning body with Equation~\eqref{eq:fit} and adds up two totals over all of them: $B(\phi)$, the
+squared depth of the bones outside the skin, and $R(\phi)$, the squared rotation error. The calibration chooses
 \begin{equation}
-\phi^\star=\arg\min_{\phi}\;\underbrace{\frac{1}{E_B^0}\sum_{c,r}\Delta B_{c,r}^2}_{\substack{\text{bone vertices}\\\text{outside the skin}}}
-+\underbrace{\frac{1}{E_R^0}\sum_{c,g}\Delta R_{c,g}^2}_{\text{rotation error}}
-+\underbrace{\sum_{m}\frac{\lVert\Delta L_m\rVert^2}{\ell^2}}_{\text{landmark move}},
+\phi^\star=\arg\min_{\phi}\;\frac{B(\phi)}{B(\phi_0)}+\frac{R(\phi)}{R(\phi_0)}
++\sum_{m}\frac{\lVert\Delta L_m\rVert^2}{\ell^2}.
 \label{eq:calibration}
 \end{equation}
-where the errors are those of Equation~\eqref{eq:fit} at the poses the solver returns with the constants $\phi$,
-$\Delta B_{c,r}$ collects the depths of region $r$'s bone vertices, $E_B^0$ and $E_R^0$ are the first two sums at the
-starting point, so that both count equally, and $\ell=10$\,mm keeps each landmark near its anatomical place. A result
-is kept only when bodies held out of the tuning score within 10\% of the tuned ones.
+Dividing each total by its value at the starting constants $\phi_0$ makes the two count equally, and the last term
+keeps each landmark within about $\ell=10$\,mm of its anatomical place. A result is kept only when bodies held out of
+the tuning score within 10\% of the tuned ones.
 
 \paragraph{Solver.} On a recording, the solver first estimates the person's own constants, a move of each landmark on
 its bone and of each inner joint within its bone group, from about 30 frames together (Appendix~\ref{sec:person}),
 and then solves Equation~\eqref{eq:fit} for every frame. All frames are solved at once on the GPU with Newton and
-MuJoCo Warp \cite{newton,mujocowarp}, deterministically: running the same recording again reproduces every number
-bit for bit.
+MuJoCo Warp \cite{newton,mujocowarp}, deterministically, so a rerun reproduces every number bit for bit.
 
-\paragraph{Forces.} The forces are estimated on the fitted path. MuJoCo's inverse dynamics gives the generalised
-forces that each frame requires. The ground, a plane fitted to the floor seen in the video \cite{wang2025moge2},
-pushes only on skin points that touch it, and a residual reduction in the manner of OpenSim's RRA
-\cite{delp2007opensim} adjusts the body's masses and the path of the pelvis slightly, so that the ground can carry the
-movement. Static optimisation then divides the generalised forces, as OpenSim does \cite{crowninshield1981criterion},
-in two stages: the ground reaction forces from the six balance equations of the pelvis alone, and then the activations
-of the 416 muscles at the least squared activation (Appendix~\ref{sec:forces}). The force and moment left unbalanced
-at the pelvis are the residuals, judged against $F_{\lim}=0.02\,W$ and $M_{\lim}=0.01\,W h_{\mathrm{com}}$, with $W$
-the body weight and $h_{\mathrm{com}}$ the height of the centre of mass; these limits are stricter than those Hicks et
-al.\ recommend \cite{hicks2015model}.
+\paragraph{Forces.} On the fitted path, MuJoCo's inverse dynamics gives the generalised forces that each frame
+requires. The ground, a plane fitted to the floor seen in the video \cite{wang2025moge2}, pushes only on skin points
+that touch it. A residual reduction as in OpenSim's RRA \cite{delp2007opensim} adjusts the masses and the pelvis path
+so that the ground can carry the movement, and static optimisation \cite{crowninshield1981criterion} then finds first
+the ground reaction forces and then the activations of the 416 muscles (Appendix~\ref{sec:forces}). What the pelvis
+still lacks is the residual, judged against 2\% of body weight for force and 1\% of body weight times centre-of-mass
+height for moment, stricter than Hicks et al.\ recommend \cite{hicks2015model}.
 % Eq. (fit): motor/fit/_frames.py weights (turns 1/N_g, markers MARKER_GOAL * trust / sum of trusts, MARKER_GOAL =
 % 2.1169 written by level 1), segment ends' trust END_WEIGHT * mean landmark trust (motor/fit/__init__.py fitting(),
 % END_WEIGHT = 2.1169), motor/fit/_skin.py (SKIN_GOAL = 1.0e3, winding number); couplings:
@@ -514,7 +512,7 @@ landmark's point on its bone and the position of each joint inside a bone group,
 calibration and the model placed it and drawn back toward it by a weight.
 In symbols, the stage estimates $\psi=(\delta,u)$: the move $\delta_m$ on its bone of each free landmark $m\in\mathcal{F}$ (all but the soles'
 pads and skull points; segment ends never move) and the move $u_j$ of each joint centre inside its group, jointly with about 30 frames $\mathcal{T}$, by Levenberg--Marquardt with the frames eliminated
-by Schur complement. With $E^0_t$ the fit without its skin term, $\rho_m^2=\lambda_L\bar w_m$ and $\bar\rho$ the
+by Schur complement. With $E^0_t=E_R+\lambda_LE_L$ the fit of frame $t$ without its skin term, $\rho_m^2=\lambda_L\bar w_m$ and $\bar\rho$ the
 mean of $\rho_m$ over all markers, it solves
 \begin{equation}
 \min_{\psi,\{q_t\}_{t\in\mathcal{T}}}\sum_{t\in\mathcal{T}}E^{0}_t(q_t;\psi)
@@ -583,7 +581,7 @@ from the fitted path, low-passed by construction, solves the linearised problem
 \end{equation}
 with pelvis residual $F^{\mathrm{res}},M^{\mathrm{res}}$, lumbar moment changes $\Delta\tau_l$, the move's three
 pelvis translations $\Delta p$, its rotational coordinates $\mathcal{R}$ (the root's three turns and the lumbar leading
-coordinates), segment turns $\Delta\vartheta_s$, the limits $F_{\lim}$ and $M_{\lim}$ of Section~\ref{sec:method},
+coordinates), segment turns $\Delta\vartheta_s$, the residual limits $F_{\lim}$ and $M_{\lim}$ given below,
 $\kappa=0.01$, $d_{\max}=2$\,cm and $\vartheta_{\max}=5\dg$; it is solved by ADMM over the product of these balls, and
 the legs are re-solved to keep the feet where they stood.
 % score/stages/sim_body/CLAUDE.md ("Residual reduction, OpenSim's RRA"); inside/rra/__init__.py (RRA_ROUNDS = 3,
