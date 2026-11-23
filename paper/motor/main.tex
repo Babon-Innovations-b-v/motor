@@ -119,7 +119,7 @@ reaction forces from video, but on a rigid body without muscles.
 On the GPU, MuJoCo Warp and Newton \cite{mujocowarp,newton}, both built on Warp \cite{warp}, simulate musculoskeletal
 models such as MyoFullBody \cite{caggiano2022myosuite,li2026musclemimic} in parallel, and MuscleMimic and MS-Human-700
 \cite{li2026musclemimic,wei2026mshuman} use them to train muscle-driven policies. These stacks learn to control a body;
-none of them estimates the forces behind an observed movement. MOTOR applies them to that inverse problem
+none of them estimates the forces behind an observed movement. MOTOR turns them to the inverse problem, from an observed movement back to its joint angles and forces
 (Figure~\ref{fig:teaser}) and is, to our knowledge, the first open chain from video to muscle forces on Newton and
 MuJoCo Warp.
 % PBL, read 2026-11-08 at arxiv.org/html/2507.08268 ("Mujoco's GPU acceleration engine, MJX"; "jointly learning
@@ -133,61 +133,67 @@ MuJoCo Warp.
 \section{Method}
 \label{sec:method}
 
-MOTOR takes a body from physical AI and finds the musculoskeletal body that moved the same way, and then the forces
-that moved it. Its input is a SOMA body for every frame of a recording: the posed skin $\mathcal{S}_t$, the rotation of
-each body segment and the joint centres. Its model is MyoFullBody
-\cite{caggiano2022myosuite,li2026musclemimic,holzbaur2005upper}, a whole-body model with 416 muscles whose bones are
-sized to the person's SOMA segments. The model is fitted to the input in three ways at once: the rotation of each bone
-group against its SOMA segment, anatomical landmarks on the bones against the same landmarks on the skin, and the bones
-kept inside the skin. MOTOR has two parts that share this fit: a calibration, run once and offline, and a solver, run
-on each recording (Figure~\ref{fig:method}, Appendix~\ref{app:method}).
+\paragraph{Problem.} For each frame $t$ of a recording, MOTOR receives a SOMA body: its posed skin $\mathcal{S}_t$,
+the global rotation of every body segment and the joint centres. It estimates the joint coordinates $q_t$ of
+MyoFullBody \cite{caggiano2022myosuite,li2026musclemimic,holzbaur2005upper}, a whole-body musculoskeletal model with
+416 muscles whose bone groups are sized to the person's SOMA segments, and, from the fitted path, the ground reaction
+forces and muscle activations that produce it. Both steps are inverse problems: the kinematics are recovered from the
+observed body, and the forces from the kinematics. The kinematic fit is shared by a calibration, run once and offline,
+and by the solver, run on every recording (Figure~\ref{fig:method}, Appendix~\ref{app:method}).
 
-How strongly each landmark should pull, and exactly where it sits on its bone, cannot be measured on a person. The
-calibration therefore tunes these constants, which every body shares, on 21 synthetic SOMA bodies of varied build that
-each perform seven clips, for which the right answer is known: bones that lie inside the skin and segments that turn
-with the input. It moves each landmark on its bone, and changes its weight, starting from the anatomical
-landmark positions, and solves
-\begin{equation}
-\Delta L^\star=\arg\min_{\Delta L}\;\sum_{c,b}\Delta B_{c,b}^2+\sum_{c,g}\Delta R_{c,g}^2+\sum_{m}\bigl(\Delta L_m/\sigma_0\bigr)^2,
-\label{eq:calibration}
-\end{equation}
+\paragraph{Kinematic fit.} The model is matched to the input through three errors. Each SOMA segment drives one bone
+group $g$, whose frame bone has the orientation $R_g(q)$ and whose target is the segment's rotation $\hat R_{g,t}$
+composed with a fixed rest alignment $A_g$, read once from the two models at rest. Each marker $m$, an anatomical
+landmark or a segment end, lies at $p_m(q)$ on a bone and at $\hat x_{m,t}$ on the skin. Each sampled bone vertex
+$v$ should lie inside the skin. With the errors
 \begin{equation*}
-\Delta B=\text{bone vertex depth outside the skin},\qquad
-\Delta R=R_{\mathrm{bone}}-R_{\mathrm{SOMA}},\qquad
-\Delta L=L-L_{\mathrm{anatomical}},
+\Delta R_g=\angle\bigl(R_g(q),\,\hat R_{g,t}A_g\bigr),\qquad
+\Delta x_m=\bigl\lVert p_m(q)-\hat x_{m,t}\bigr\rVert,\qquad
+\Delta B_v=d_{\mathcal{S}_t}\bigl(v(q)\bigr),
 \end{equation*}
-over every case $c$ (a body in a clip), bone region $b$ (its vertices together), bone group $g$ and landmark $m$. $\Delta B$ and $\Delta R$
-are each divided by their value at the start, so that both count equally, and the last term keeps each landmark
-within about $\sigma_0=10$\,mm of its anatomical place. No
-measured joint angle enters it, and a result is kept only when bodies held out of the tuning score within 10\% of the
-tuned ones.
-
-At inference time, the solver first fits the person's own landmark moves from about 30 frames and then fits every
-frame $t$, within the model's joint limits and couplings, as
+where $\angle$ is the angle of the relative rotation and $d_{\mathcal{S}_t}$ the distance of a point outside the
+skin (zero inside it), each frame solves
 \begin{equation}
-q_t=\arg\min_{q}\;\operatorname*{mean}_{g}\Delta R_g^2+\lambda_m\sum_{m}w_m\,\Delta x_m^2+\lambda_s\operatorname*{mean}_{b}\Delta B_b^2,
+q_t=\arg\min_{q\in\mathcal{Q}}\;\frac{1}{N_g}\sum_{g}\Delta R_g^2+\lambda_L\sum_{m}\bar w_m\,\Delta x_m^2
++\frac{\lambda_S}{N_v}\sum_{v}\Delta B_v^2,
 \label{eq:fit}
 \end{equation}
-\begin{equation*}
-\Delta R=R_{\mathrm{bone}}-R_{\mathrm{SOMA}},\qquad
-\Delta x=L-x_{\mathrm{skin}},\qquad
-\Delta B=\text{bone vertex depth outside the skin},
-\end{equation*}
-where $q$ are the model's joint coordinates in frame $t$; $\Delta R$ is measured as the angle between the two
-rotations, $\Delta x$ as a distance, and $\Delta B$ as how far each bone vertex lies outside the skin (zero inside). The
-landmark weights $w_m$ come from the calibration and sum to one; $\lambda_m$ and $\lambda_s$ weigh the landmarks and
-the skin against the rotations. All frames are
-solved at once on the GPU with Newton and MuJoCo Warp \cite{newton,mujocowarp}, repeatably bit for bit.
+where $\mathcal{Q}$ is the set of coordinates that respect the model's joint limits and couplings, $\bar w_m$ are the
+calibrated marker weights normalised to sum to one, and $\lambda_L$ and $\lambda_S$ weigh the markers and the skin
+against the rotations. No measured joint angle enters the objective.
 
-The forces follow from the fitted motion. MuJoCo's inverse dynamics gives the torques each frame needs; the ground,
-a plane fitted to the floor seen in the video \cite{wang2025moge2}, pushes only on skin points that touch it; and a
-residual reduction in the manner of OpenSim's RRA \cite{delp2007opensim} adjusts the masses and the pelvis path
-slightly, so that the ground can carry the movement. Static optimisation then divides the torques, as OpenSim does
-\cite{crowninshield1981criterion}, in two stages: first the ground reaction forces from the balance of the pelvis
-alone, then the activations of the 416 muscles at the least squared activation (Appendix~\ref{sec:forces}). What is
-left unbalanced at the pelvis is recorded as the residual and judged against 2\% of body weight for force and 1\% of
-weight times centre-of-mass height for moment, limits stricter than those Hicks et al.\ recommend
-\cite{hicks2015model}.
+\paragraph{Calibration.} Where each landmark sits on its bone, and how strongly it should pull, cannot be measured on
+a person. These constants, shared by every body, are therefore tuned once on 21 synthetic SOMA bodies of varied build,
+each performing seven clips, for which the correct answer is known: bones that lie inside the skin and bone groups
+that turn with their segments. The calibration constants $\phi$ are each landmark's move $\Delta L_m$ from its
+anatomical position, the marker weights, the positions of the segment ends and two global weights, among them
+$\lambda_L$. Over every case $c$ (one body in one clip), body region $r$ and bone group $g$, the calibration solves the
+bounded problem
+\begin{equation}
+\phi^\star=\arg\min_{\phi}\;\frac{1}{E_B^0}\sum_{c,r}\Delta B_{c,r}^2+\frac{1}{E_R^0}\sum_{c,g}\Delta R_{c,g}^2
++\sum_{m}\frac{\lVert\Delta L_m\rVert^2}{\ell^2},
+\label{eq:calibration}
+\end{equation}
+where the errors are those of Equation~\eqref{eq:fit} at the poses the solver returns with the constants $\phi$,
+$\Delta B_{c,r}$ collects the depths of region $r$'s bone vertices, $E_B^0$ and $E_R^0$ are the first two sums at the
+starting point, so that both count equally, and $\ell=10$\,mm keeps each landmark near its anatomical place. A result
+is kept only when bodies held out of the tuning score within 10\% of the tuned ones.
+
+\paragraph{Solver.} On a recording, the solver first estimates the person's own constants, a move of each landmark on
+its bone and of each inner joint within its bone group, from about 30 frames together (Appendix~\ref{sec:person}),
+and then solves Equation~\eqref{eq:fit} for every frame. All frames are solved at once on the GPU with Newton and
+MuJoCo Warp \cite{newton,mujocowarp}, and two runs agree bit for bit.
+
+\paragraph{Forces.} The forces are estimated on the fitted path. MuJoCo's inverse dynamics gives the generalised
+forces that each frame requires. The ground, a plane fitted to the floor seen in the video \cite{wang2025moge2},
+pushes only on skin points that touch it, and a residual reduction in the manner of OpenSim's RRA
+\cite{delp2007opensim} adjusts the body's masses and the path of the pelvis slightly, so that the ground can carry the
+movement. Static optimisation then divides the generalised forces, as OpenSim does \cite{crowninshield1981criterion},
+in two stages: the ground reaction forces from the six balance equations of the pelvis alone, and then the activations
+of the 416 muscles at the least squared activation (Appendix~\ref{sec:forces}). The force and moment left unbalanced
+at the pelvis are the residuals, judged against $F_{\lim}=0.02\,W$ and $M_{\lim}=0.01\,W h_{\mathrm{com}}$, with $W$
+the body weight and $h_{\mathrm{com}}$ the height of the centre of mass; these limits are stricter than those Hicks et
+al.\ recommend \cite{hicks2015model}.
 % Eq. (fit): motor/fit/_frames.py weights (turns 1/N_g, markers MARKER_GOAL * trust / sum of trusts, MARKER_GOAL =
 % 2.1169 written by level 1), segment ends' trust END_WEIGHT * mean landmark trust (motor/fit/__init__.py fitting(),
 % END_WEIGHT = 2.1169), motor/fit/_skin.py (SKIN_GOAL = 1.0e3, winding number); couplings:
@@ -445,12 +451,12 @@ Fitting the solver, Equation~\eqref{eq:fit}, is the objective that the calibrati
 share. For one frame, with the person's constants fixed, it finds MyoFullBody's coordinates $q$
 that come closest to the input body while every joint stays within its anatomical limits.
 The first term is the main one: for each of the $N_g$ bone groups, it measures the angle between the frame bone's
-orientation $R_g(q)$ and its SOMA segment's rotation $\hat R_g$ composed with the group's rest alignment. The second
+orientation $R_g(q)$ and its SOMA segment's rotation $\hat R_{g,t}$ composed with the group's rest alignment $A_g$. The second
 pulls each marker $m$ (the landmarks and the segment ends) at its point $p_m(q)$ on the model toward its point $\hat
-x_m$ on the SOMA body, weighted by $\bar w_m$, its weight $w_m$ over the sum of all. The third holds the $N_b$ bone
-vertices inside the skin, $d_b$ being a vertex's offset outside it. Each goal is normalised by its own count, as OpenSim's inverse kinematics weighs its goals
-\cite{seth2018opensim}. The markers' goal $\lambda_m$ is set by the calibration (2.1169), and the skin goal
-$\lambda_s$ is $10^3$, chosen in a sweep that traded the bones outside the skin against the rotation error. A coupled
+x_{m,t}$ on the SOMA body, weighted by $\bar w_m$, its weight $w_m$ over the sum of all. The third holds the $N_v$ sampled bone
+vertices inside the skin, $\Delta B_v$ being a vertex's depth outside it. Each goal is normalised by its own count, as OpenSim's inverse kinematics weighs its goals
+\cite{seth2018opensim}. The markers' goal $\lambda_L$ is set by the calibration (2.1169), and the skin goal
+$\lambda_S$ is $10^3$, chosen in a sweep that traded the bones outside the skin against the rotation error. A coupled
 joint (a \emph{follower}) moves with a \emph{leading} coordinate through MyoFullBody's own polynomial $f$, held as an
 equality constraint, and the limits are the published ranges of the leading coordinates, held as bounds. The fingers
 are held at SOMA's rest.
@@ -478,7 +484,7 @@ The calibration (level 1 in the code) determines the constants of the landmarks 
 once, offline, before the solver is applied to any recording. One bounded least-squares problem tunes, all together,
 each landmark's offset from its bone (for a landmark that defines a joint, only across its bone's long axis); each landmark's
 weight, mirrored and shared between left and right; each segment end's position on MyoFullBody, within 40\,mm of the
-model's own joint centre; and two global weights, the markers' goal $\lambda_m$ and the segment ends' weight among the
+model's own joint centre; and two global weights, the markers' goal $\lambda_L$ and the segment ends' weight among the
 markers. Its objective has two terms, each normalised by its value at the start so that the two weigh alike: each body
 region's bones' depth outside the SOMA skin, and each segment's rotation error against its bone group. Each evaluation
 runs the person stage and the per-frame fit on every tuning body.
@@ -503,13 +509,13 @@ their frames together \cite{cotton2026b3d}. About 30 frames, spread over the per
 length, are posed, and one sparse least-squares problem solves, together with those frames' coordinates, each
 landmark's point on its bone and the position of each joint inside a bone group, each within 3\,cm of where the
 calibration and the model placed it and drawn back toward it by a weight.
-In symbols, the stage estimates $\theta=(\delta,u)$: the move $\delta_m$ on its bone of each free landmark $m\in\mathcal{F}$ (all but the soles'
+In symbols, the stage estimates $\psi=(\delta,u)$: the move $\delta_m$ on its bone of each free landmark $m\in\mathcal{F}$ (all but the soles'
 pads and skull points; segment ends never move) and the move $u_j$ of each joint centre inside its group, jointly with about 30 frames $\mathcal{T}$, by Levenberg--Marquardt with the frames eliminated
-by Schur complement. With $E^0_t$ the fit without its skin term, $c_m^2=\lambda_mw_m/\sum_kw_k$ and $\bar c$ the
-mean of $c_m$ over all markers, it solves
+by Schur complement. With $E^0_t$ the fit without its skin term, $\rho_m^2=\lambda_L\bar w_m$ and $\bar\rho$ the
+mean of $\rho_m$ over all markers, it solves
 \begin{equation}
-\min_{\theta,\{q_t\}_{t\in\mathcal{T}}}\sum_{t\in\mathcal{T}}E^{0}_t(q_t;\theta)
-+\sum_{m\in\mathcal{F}}c_m^{2}\lVert\delta_m\rVert^2+\bar c^{\,2}\sum_{j}\lVert u_j\rVert^2
+\min_{\psi,\{q_t\}_{t\in\mathcal{T}}}\sum_{t\in\mathcal{T}}E^{0}_t(q_t;\psi)
++\sum_{m\in\mathcal{F}}\rho_m^{2}\lVert\delta_m\rVert^2+\bar\rho^{\,2}\sum_{j}\lVert u_j\rVert^2
 \;\;\text{s.t.}\;\;\lVert\delta_m\rVert_\infty,\lVert u_j\rVert_\infty\le 3\,\text{cm},
 \label{eq:person}
 \end{equation}
@@ -588,20 +594,19 @@ touching skin points by a small weight on each newton, in two rounds. The second
 joints' range stops and the activations of all 416 muscles at least squared activation, through MuJoCo's own muscle
 lengths, moment arms and force curves. Each knee's small rotation of the shin on the femur, which MyoFullBody's knee
 extensors reach only through moment arms of a few millimetres, is held by its ligaments as a stop, so that it does not
-decide how the vasti share their load. Solved as one least-squares problem, the split was ill-posed: on the recorded frames where it was measured, a
-$10^{-6}$ nudge of the contacts moved an activation by up to 1.0, against at most $5\times10^{-3}$ in two stages. What the pelvis still
+decide how the vasti share their load. What the pelvis still
 needs is the residual and what a joint still needs its reserve; both are recorded and judged, and never applied to the
 body.
 % inside/muscles/__init__.py (SHARE_COST = 0.03, SHARE_ROUNDS = 2, STAGES, LIGAMENTS and their comments: knee extensors
 % "reach it by 0.3 to 0.5 cm"); score/stages/sim_body/CLAUDE.md (two stages, least squared activation, residual and
 % reserves never applied); nudge: commit f8e0d3f7 and the SHARE_COST comment.
 
-In matrix form, with the moment arms $R$, whose root rows are set to zero
-because a muscle exerts no net force on the body as a whole, the muscle gain $g$ and bias $b$, so that actuator $k$
-produces the force $g_ka_k+b_k$ (negative in tension), the columns $S$ of the joint stops and knee ligaments, the
+In matrix form, with the moment arms $D$, whose root rows are set to zero
+because a muscle exerts no net force on the body as a whole, the muscle gains $\gamma$ and biases $\eta$, so that muscle $n$
+produces the force $\gamma_na_n+\eta_n$ (negative in tension), the columns $S$ of the joint stops and knee ligaments, the
 contact columns $C=[J_p^{\top}e_{p,i}]$ and the map $G$ of the couplings, the problem reads
 \begin{equation}
-A=G^{\top}\bigl[\,C\;\;S\;\;R\operatorname{diag}(g)\,\bigr],\qquad y=G^{\top}\bigl(\tau^{\mathrm{ID}}-Rb\bigr),\qquad x=(f,\sigma,a),
+A=G^{\top}\bigl[\,C\;\;S\;\;D\operatorname{diag}(\gamma)\,\bigr],\qquad y=G^{\top}\bigl(\tau^{\mathrm{ID}}-D\eta\bigr),\qquad x=(f,\sigma,a),
 \label{eq:so}
 \end{equation}
 with the pyramid-edge coefficients $f$, the stop and ligament forces $\sigma$ and the activations $a$ as unknowns. Its
@@ -612,14 +617,14 @@ activation by up to 1.0, against at most $5\times10^{-3}$ when it is solved in t
 reaction force is therefore found first, from the balance of the pelvis alone, and the muscles afterwards:
 \begin{equation}
 \begin{gathered}
-f^{(0)}=\arg\min_{f\ge0}\beta^2\lVert A_pf-y_p\rVert^2+c_c^2\lVert f\rVert^2,\qquad
-f^{(k)}=\arg\min_{f\ge0}\lVert\beta A_pf-\omega^{(k-1)}\rVert^2+c_s^2\lVert f\rVert^2,\\
+f^{(0)}=\arg\min_{f\ge0}\beta^2\lVert A_pf-y_p\rVert^2+\mu_c^2\lVert f\rVert^2,\qquad
+f^{(k)}=\arg\min_{f\ge0}\lVert\beta A_pf-\omega^{(k-1)}\rVert^2+\mu_s^2\lVert f\rVert^2,\\
 (\sigma,a)=\arg\min_{\sigma\ge0,\,0\le a\le1}\bigl\lVert A_j^{(\sigma,a)}[\sigma;a]-\bigl(y_j-A_j^{(f)}f^{(2)}\bigr)\bigr\rVert^2
-+c_c^2\lVert\sigma\rVert^2+\lVert a\rVert^2,
++\mu_c^2\lVert\sigma\rVert^2+\lVert a\rVert^2,
 \end{gathered}
 \label{eq:stages}
 \end{equation}
-with $\beta=100$, $c_c=10^{-3}$, $c_s=0.03$, $\omega^{(0)}=\omega^\star=\beta A_pf^{(0)}$ and
+with $\beta=100$, $\mu_c=10^{-3}$, $\mu_s=0.03$, $\omega^{(0)}=\omega^\star=\beta A_pf^{(0)}$ and
 $\omega^{(k)}=\omega^{(k-1)}+\omega^\star-\beta A_pf^{(k)}$ for $k=1,2$, so that $f^{(2)}$ keeps the balance while
 spreading the load over the points in contact. The rows that remain unmet, the pelvis residual and the joint reserves,
 are recorded but never applied. They are judged against $F_{\lim}=0.02\,W$ and $M_{\lim}=0.01\,W h_{\mathrm{com}}$, where
@@ -1168,8 +1173,8 @@ Part & Parameter & Value \\
 Model & muscles, bones, joints & 416, 86, 132 \\
  & joints: root, coupled, free & 1, 36, 95 \\
 Landmarks & defined, used by the fit & 102, 84 \\
-Fit & markers' goal $\lambda_m$ & 2.1169 \\
- & skin goal $\lambda_s$ & $10^3$ \\
+Fit & markers' goal $\lambda_L$ & 2.1169 \\
+ & skin goal $\lambda_S$ & $10^3$ \\
  & most steps per frame & 300 \\
 Level 1 & segment end's reach & 40\,mm \\
  & held-out rule & check bodies within 10\% of tuning bodies \\
