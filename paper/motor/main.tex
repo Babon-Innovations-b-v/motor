@@ -4,8 +4,8 @@
 % Build: tectonic -X compile --keep-intermediates main.tex (paper/CLAUDE.md), then delete main.aux, main.out, main.log.
 % The story is the one agreed with the owner on 2026-11-08, #98 comment 6723992362: two ecosystems, physical AI and
 % biomechanics; SOMA physical AI's standard body, MyoFullBody a candidate standard musculoskeletal model, MOTOR the
-% solver between the two standards (owner, 2026-11-08). The main body has five sections (related work, method, results,
-% discussion, conclusion; owner, 2026-11-18: results and conclusion fuller, the discussion beyond limits, the full
+% solver between the two standards (owner, 2026-11-08). The main body has four sections (related work, method, results,
+% conclusion; the discussion removed, owner, 2026-11-23; owner, 2026-11-18: results and conclusion fuller, the full
 % formulas of the calibration and of the solver at inference time, better figures), and is at most 4 pages
 % (it ends at \label{endofmain}) and follows the structure and register of the author's published paper (arXiv:2607.17639,
 % cited as kardolus2026direct) for structure and tone only; none of its method is used here.
@@ -17,7 +17,7 @@
 % 2026-11-07 run's (paper/motor/evidence/labval-final-2026-11-07.txt), said where they are used. Every comparison with
 % OpenCap is measured as OpenCap measures it (same activities, activities weighted equally, its camera positions):
 % paper/motor/evidence/comparison-2026-11-09.txt, the same 716 runs re-scored (#98 comment 6744969345). The whole-trial
-% solve appears only as future work in the discussion, its numbers from paper/motor/evidence/motor-labval-2026-11-09.txt.
+% solve is not in the main body since the discussion was removed (owner, 2026-11-23), its numbers from paper/motor/evidence/motor-labval-2026-11-09.txt.
 % OpenCap's numbers are its published ones; neither OpenCap nor PBL was rerun here.
 \usepackage{iftex}
 \ifPDFTeX
@@ -221,6 +221,16 @@ height for moment, stricter than Hicks et al.\ recommend \cite{hicks2015model}.
 % net external force);
 % projected Newton: motor/solvers/__init__.py least. Bit for bit: commit e0c46164, evidence/speed-2026-11-06.txt.
 
+\begin{figure}[!b]
+\centering
+\includegraphics[width=\linewidth]{figures/summary.pdf}
+\caption{Mean absolute error against the laboratory per activity, and solve time per recording. MOTOR pools its runs
+from the two $\pm45\dg$ cameras and scores 15 angles (OpenCap 18); OpenCap Monocular reports angles only, without drop
+jumps. Ground reaction force (GRF) is both feet summed. MOTOR's time is on one L4 GPU without pose estimation;
+OpenCap's are its recorded solves.}
+\label{fig:summary}
+\end{figure}
+
 \section{Results}
 \label{sec:protocol}
 
@@ -238,15 +248,6 @@ cameras at $\pm45\dg$ (Appendix~\ref{app:protocol}); OpenCap's figures cover ten
 % al. 2023 (two cameras, Table 1; 10 subjects)").
 
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/summary.pdf}
-\caption{Mean absolute error against the laboratory per activity, and solve time per recording. MOTOR pools its runs
-from the two $\pm45\dg$ cameras and scores 15 angles (OpenCap 18); OpenCap Monocular reports angles only, without drop
-jumps. Ground reaction force (GRF) is both feet summed. MOTOR's time is on one L4 GPU without pose estimation;
-OpenCap's are its recorded solves.}
-\label{fig:summary}
-\end{figure}
 % drawn by figures/summary/plot.py. data: comparison-2026-11-09.txt "Cam1+Cam3" (angles 4.48/6.13/5.94/6.14/5.67/5.52; vertical 14.32/6.55/10.63/21.65/
 % 13.29/10.50; anterior 11.54/3.86/4.84/5.69/6.48/6.75; medio-lateral 3.30/3.81/3.85/2.86/3.45/3.65; moments
 % 1.79/1.66/1.61/3.61/2.17/1.69) and its last section (Uhlrich et al. 2023 Table 1; Monocular 4.8); time:
@@ -278,54 +279,6 @@ solves.
 % seconds per step": total 66.214 [34.843, 788.668], fit 21.825, residual reduction iterations 19.862); OpenCap's
 % solves: #98 comment 6696117098.
 
-\section{Discussion}
-
-A single GPU solver thus carries a standard body from one phone to muscle forces on a public cohort, forty to sixty
-times faster than OpenCap's recorded solves.
-% 4196 / 66.2 = 63 (walk), 2635 / 66.2 = 40 (squat); moments-labval-2026-11-09.txt section 1 ("each leaves about half";
-% lab inputs walking 0.66, trunk sway 0.80, squats 0.42, sit-to-stand 0.47).
-In this run its largest remaining error was the division of the load between the feet. In squats the division alone
-accounts for an error of 16.2\% of body weight (the per-foot error is 16.4\% and the error of the total force 3.2\%),
-and the summed force follows the plates ($r=0.98$) while each foot does not (0.41 and 0.39). The balance of the pelvis
-fixes the total force but not how it is divided, and the division followed the lean of the input body: its error
-changes sign with the camera, from $+0.07$ to $-0.07$ in the left foot's share, although the model itself is symmetric.
-The input also carries the anterior error, since the anterior force that the video's motion demands is 17.4\%
-of body weight off the plates against 2.6\% for the laboratory's, and the elbows come out 21 to 24\dg{} too straight,
-as they are in GEM-X's output.
-% motor issue #1 comment 6931271320 (715 runs of 11-07: squats per-foot 16.4, split part 16.2, total part 3.2, MAEs of
-% two components, not additive; summed r 0.98, per foot
-% 0.41 / 0.39); #1 comment 6975016712 (left share per camera, squats +.07 ... -.07; model 20.71 against 20.69 kg per
-% side); moments-labval-2026-11-09.txt section 2 (17.4 against 2.6); labval-final-2026-11-07.txt ("signed offsets":
-% elbow -21.12 / -23.66); elbow-2026-11-07.txt (median -18.5); comparison-2026-11-09.txt (KAM Cam1 1.97, Monocular
-% 0.36); #98 comment 6721835197 (37-44 against 9-16 mm); teaser-2026-11-07.json (90.13 left / 52.93 right).
-
-Two changes made since this run address the division. The first takes each foot's contact from its lowest skin point
-above a floor fitted per trial, instead of from GEM-X's stance flag; the second adds a row to the static optimisation
-that hands the load from one foot to the other across double support. Solved again with both on the whole cohort (688
-of the 716 recordings; the run's spending limit stopped the other 28), each foot's vertical force on the 687
-recordings both runs share is off by 14.1\% of body weight instead of 17.6\%, and the error in the left foot's share
-of the load falls from 0.12 to 0.08. The gain is largest when rising from a chair (16.6 to 7.1\%) and smallest in
-walking (20.0 to 18.8\%), while the summed force is unchanged (16.0 against 16.3\%). The pelvis residual falls from a
-median of 7.2 to 4.1\% of body weight and the agreement with EMG rises from $r=0.23$ to 0.26, but the joint moments of
-squats worsen from 1.55 to 2.34\% of body weight times height. A whole-trial solve raised the share of frames within the residual limits
-from 21 to 35\% at five times the cost but worsened the moments and the agreement with EMG, so the next gains lie in
-the input. Three limitations remain: the
-cohort contains only healthy adults, GEM-X resamples every clip to 30\,Hz although drop jumps carry the largest errors,
-and the calibration in use has no recorded held-out score.
-% Full cohort with both changes: evidence/forces-labval-2026-11-20-full.txt ("all five", 687 trials both runs have;
-% per-foot right/left 17.869/17.297 -> 14.419/13.700, mean 17.58 -> 14.06; left share 0.119 -> 0.081; sit-to-stand
-% 16.657/16.493 -> 7.060/7.187; walking 19.617/20.474 -> 18.728/18.954; sum vert 16.296 -> 16.038; residual F 7.247 ->
-% 4.060; EMG r 0.233 -> 0.259; squats moments 1.545 -> 2.338).
-% ad7e8c6: motor issue #1 comment 6962132074 (held-out Cam1 walking n = 18: 17.2 -> 15.1). 6d72d73: #1 comment
-% 6980387981 (13 trials, subjects 2-4, Cam1: squats per-foot RMSE 21.2 -> 13.5). Hand-over split 4799331: #1 comment 6985456815 (14 trials, subjects 2-4, Cam1, 175ab04 -> 4799331: RMSE walking 16.1 -> 13.2, squats 13.5 -> 6.1, sit-to-stand 17.4 -> 11.3, drop jump 30.5 -> 26.6; left-share MAE walking 0.184 -> 0.062; residual moment +7 to +11 N m; dip and landing peaks from the input's CoM acceleration). Neither is in the full-cohort
-% results above; drop jumps 19.9 -> 19.8 (#1 comment 6962132074); 6d72d73 against ad7e8c6, SPLIT swept on the same 13
-% trials, pelvis residual moment +1.5 to +6 N m (#1 comment 6980387981). Whole-trial solve:
-% evidence/motor-labval-2026-11-09.txt (frames within, all trials 0.349 against 0.206, envelope 0.396 against 0.203;
-% envelope moments 2.03 [1.93, 2.12] against 1.77 [1.68, 1.86], EMG r 0.16 against 0.23; 308.563 against 66.214 s). B3D Table 2 (3.66 against 3.24 deg). Drop jumps:
-% moments-labval-2026-11-09.txt (after, 3.51). Calibration: #70 comments 6621931172, 6629418159 (5.15 %), 6565739270.
-% 30 Hz: tools/labval/_soma.py RATE.
-
-\enlargethispage{3\baselineskip}
 \section{Conclusion}
 
 From one phone, MOTOR estimates joint angles within 5.6\dg{} and the summed vertical ground reaction force within

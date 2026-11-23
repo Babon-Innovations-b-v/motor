@@ -16,7 +16,7 @@ its path so its build line and evidence paths read the same. Its `#N` and commen
   are `\interim`.
 - Its story is the one agreed with the owner (SCORE #98 comment 6723992362): SOMA is physical AI's standard body,
   MyoFullBody a candidate standard musculoskeletal model, MOTOR the solver between the two standards. The main body
-  after the abstract is five sections, related work, method, results, discussion, conclusion (owner, 2026-11-18), and
+  after the abstract is four sections, related work, method, results, conclusion (owner, 2026-11-18; the discussion removed 2026-11-23), and
   with its figures **at most 4 pages**: it ends at `\label{endofmain}` after a `\FloatBarrier`, and its page in `main.aux` is at most
   4. Method detail and full tables go to the appendices. MOTOR is the per-frame solver: its results are the run of
   `evidence/labval-final-2026-11-07.txt`; the whole-trial solve is future work, its numbers from
