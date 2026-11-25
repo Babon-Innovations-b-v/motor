@@ -676,7 +676,6 @@ def a_pose_measured_once_gives_the_same_fit():
     angles, bit for bit, as with every ask measured again (SEEN 0), in under half the closest-point launches; and a new
     skin set at the same pose is measured again, never read off the last skin's."""
     import numpy as np
-    from motor import fit
     from motor.fit import _frames, _skin
     calls, measure = [0], _skin.SkinMeshes.apart
 
@@ -695,7 +694,7 @@ def a_pose_measured_once_gives_the_same_fit():
             fitting.apply(truth)
             for seen in (0, saved):
                 _frames.SEEN, calls[0] = seen, 0
-                found.append((fit.angles(fitting, turns, points, skins), calls[0]))
+                found.append((_frames.Frames(fitting).fitted(turns, points, skins=skins), calls[0]))
             task, configuration = _frames.SkinTask(fitting.model), _frames.mink.Configuration(fitting.model)
             configuration.update(found[1][0][0])
             task.set_skin(skins[0:1])

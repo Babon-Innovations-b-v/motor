@@ -1,8 +1,9 @@
 """`solvers.within_balls` with its big products on the card (#70, 2026-11-05): RRA's capped move, the least squares
 over a product of balls by ADMM, the same rounds, penalty and stops in float64, its per-round products with the ball
-rows (balls x 3 by every frame's move) and the inverse of its penalised curvature (`hessian + rho rows^T rows`, made on
-the processor by its Cholesky factor, again whenever the penalty changes) launched on the card; the ball projection
-and the stops read on the host each round, as `within_balls` does."""
+rows (balls x 3 by every frame's move) launched on the card, and its penalised curvature (`hessian + rho rows^T rows`)
+solved by its Cholesky factor on the processor (factorised again whenever the penalty changes, without forming the
+ill-conditioned explicit inverse); the ball projection and the stops read on the host each round, as `within_balls`
+does."""
 import numpy as np
 import warp as wp
 from scipy.linalg import cho_factor, cho_solve
@@ -33,19 +34,17 @@ def _times_t(matrix: wp.array2d[wp.float64], vector: wp.array[wp.float64], out: 
 
 
 class Products:
-    """`rows` on the card and its two products, `ahead` (rows y) and `back` (rows^T v), and the inverse's (`solve`)."""
+    """`rows` on the card and its two products, `ahead` (rows y) and `back` (rows^T v), and the Cholesky `solve`."""
 
     def __init__(self, rows):
         self.rows = wp.array(np.ascontiguousarray(rows, dtype=np.float64), dtype=wp.float64, device=DEVICE)
-        self.inverse = None
+        self.factor = None
         self.short = wp.zeros(rows.shape[0], dtype=wp.float64, device=DEVICE)
         self.long = wp.zeros(rows.shape[1], dtype=wp.float64, device=DEVICE)
-        self.solved = wp.zeros(rows.shape[1], dtype=wp.float64, device=DEVICE)
 
     def invert(self, matrix):
-        """The inverse of `matrix` (symmetric positive definite) by its Cholesky factor, put on the card."""
-        found = cho_solve(cho_factor(matrix), np.eye(len(matrix)))
-        self.inverse = wp.array(np.ascontiguousarray(found), dtype=wp.float64, device=DEVICE)
+        """The Cholesky factor of `matrix` (symmetric positive definite), kept for `solve`."""
+        self.factor = cho_factor(matrix)
 
     def ahead(self, vector):
         """rows vector."""
@@ -61,11 +60,8 @@ class Products:
         return self.long.numpy()
 
     def solve(self, vector):
-        """The inverse times vector."""
-        self.long.assign(vector)
-        wp.launch(_times, dim=self.solved.shape[0], inputs=[self.inverse, self.long], outputs=[self.solved],
-                  device=DEVICE)
-        return self.solved.numpy()
+        """`matrix^-1 vector` through its Cholesky factor."""
+        return cho_solve(self.factor, vector)
 
 
 def within_balls_card(system, wanted, rows, values):
