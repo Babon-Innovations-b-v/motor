@@ -30,6 +30,9 @@ its path so its build line and evidence paths read the same. Its `#N` and commen
   2026-11-18 on this PC's card from a run of 4799331 (each foot its share of the contacts' timeline, #1) on the
   single-camera LabValidation jobs, every window from that one run: bodies, activations and GRF; named `-timeline` so
   GitHub shows them, not its cached earlier clips.
+- `motor/demos/sizing-2026-11-26/`: MyoFullBody sized and fitted to three generated SOMA bodies (tall, heavy, short)
+  on one Kimodo walk, for the MyoSuite discussion (owner, 2026-11-26): the clips, each clip's job and SOMA data, the
+  bodies, the scripts, and its `README.md`, the log to recreate it and the fit's three errors.
 
 ## Rules
 

@@ -1,0 +1,51 @@
+{
+ "regression r2": [
+  0.9996,
+  0.9967,
+  0.9938
+ ],
+ "bodies": {
+  "tall": {
+   "target": [
+    1.93,
+    0.511,
+    24.5
+   ],
+   "stature": 1.93,
+   "leg": 0.9862,
+   "leg_ratio": 0.511,
+   "volume": 0.0913,
+   "bmi_vol": 24.5,
+   "coeff norm sd": 2.669,
+   "largest coeff sd": 2.599
+  },
+  "heavy": {
+   "target": [
+    1.69,
+    0.511,
+    35.0
+   ],
+   "stature": 1.69,
+   "leg": 0.8636,
+   "leg_ratio": 0.511,
+   "volume": 0.1,
+   "bmi_vol": 35.0,
+   "coeff norm sd": 2.04,
+   "largest coeff sd": 1.032
+  },
+  "short": {
+   "target": [
+    1.5,
+    0.511,
+    24.5
+   ],
+   "stature": 1.5,
+   "leg": 0.7665,
+   "leg_ratio": 0.511,
+   "volume": 0.0551,
+   "bmi_vol": 24.5,
+   "coeff norm sd": 2.009,
+   "largest coeff sd": 1.945
+  }
+ }
+}
