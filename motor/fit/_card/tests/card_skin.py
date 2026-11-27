@@ -65,7 +65,7 @@ def the_card_holds_the_bones_inside_as_mink():
     try:
         reference = mink_frames(mjm, turns, places, skins)
         seeds = np.vstack([mjm.qpos0[None], reference[:-1]])
-        found, _ = toy_clip_card(mjm).angles(turns[:, None], places, seeds, skins)
+        found, _ = toy_clip_card(mjm).angles(turns[:, None], places, seeds, skins, exact=True)
     finally:
         _skin.SKIN_GOAL = kept
     free = mink_frames(mjm, turns, places)

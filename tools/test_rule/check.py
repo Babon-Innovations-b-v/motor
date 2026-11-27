@@ -325,7 +325,7 @@ def faults(root, named=(), debt=None, allowlist=None, main_only=None, base="orig
             found.append(f"{path}: its docstring names none of {path.parent}'s tool scripts")
             module = path
         modules.setdefault(module, []).append((path, text))
-    wanted = {pathlib.PurePosixPath(name) for name in named}
+    wanted = {pathlib.PurePosixPath(name.replace("\\", "/")) for name in named}
     for module, files in sorted(modules.items()):
         if wanted and not wanted & {path for path, _ in files}:
             continue

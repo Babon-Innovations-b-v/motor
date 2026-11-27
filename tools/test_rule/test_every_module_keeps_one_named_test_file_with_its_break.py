@@ -100,6 +100,10 @@ CASES = {
         {"score/graph/test_a.py": GOOD, "score/graph/test_b.py": GOOD, "score/store/store_test.py": GOOD}, {}, "",
         ("score/store/store_test.py",), {},
         ["score/store/store_test.py: named for its module, not its invariant (rename to test_<invariant>.py)"]),
+    "named files with Windows backslashes check their modules": (
+        {"score/graph/test_a.py": GOOD, "score/graph/test_b.py": GOOD, "score/store/store_test.py": GOOD}, {}, "",
+        (r"score\store\store_test.py",), {},
+        ["score/store/store_test.py: named for its module, not its invariant (rename to test_<invariant>.py)"]),
     "three functions, a class's method among them": (
         {"score/graph/test_a.py": THREE}, {}, "", (), {},
         ["score/graph/test_a.py: 3 test functions, one a file (merge them into one test of the answer that matters)"]),
