@@ -551,21 +551,38 @@ def _check_mcp_create_issue(tool_input):
                      str(tool_input.get("body") or ""))
 
 
-def _is_destructive_git(command):
-    """True if ``command`` runs a history-destroying git op. Matches tokens, not substrings, so a force pattern
-    quoted inside a commit message does not trip it; quoting shlex cannot parse falls open."""
+def _git_invocations(command):
+    """The token list of each git command in ``command``, from ``git`` to the next shell operator. A compound line is
+    split at ``&&``, ``||``, ``;``, ``|`` and newlines first, so ``rm -f x && git push`` is not read as
+    ``git push -f``. Quoting shlex cannot parse yields nothing (falls open)."""
+    lexer = shlex.shlex(command.replace("\n", ";"), posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
     try:
-        tokens = shlex.split(command)
+        tokens = list(lexer)
     except ValueError:
-        return False
-    if "git" not in tokens:
-        return False
-    if "reset" in tokens and "--hard" in tokens:
-        return True
-    if "push" not in tokens:
-        return False
-    # a refspec whose source starts with '+' (git push origin +main:main) force-updates the remote
-    return any(token in ("--force", "--force-with-lease", "-f") or re.match(r"\+[^\s:]+:", token) for token in tokens)
+        return []
+    invocations, segment = [], []
+    for token in tokens + [";"]:
+        if token and set(token) <= set("();<>|&"):
+            if "git" in segment:
+                invocations.append(segment[segment.index("git"):])
+            segment = []
+        else:
+            segment.append(token)
+    return invocations
+
+
+def _is_destructive_git(command):
+    """True if ``command`` runs a history-destroying git op. Matches the tokens of each git command on its own, so a
+    force pattern quoted inside a commit message, or a flag of another command on the same line, does not trip it."""
+    for tokens in _git_invocations(command):
+        if "reset" in tokens and "--hard" in tokens:
+            return True
+        # a refspec whose source starts with '+' (git push origin +main:main) force-updates the remote
+        if "push" in tokens and any(token in ("--force", "--force-with-lease", "-f")
+                                    or re.match(r"\+[^\s:]+:", token) for token in tokens):
+            return True
+    return False
 
 
 def main():

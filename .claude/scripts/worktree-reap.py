@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reap orphaned git worktrees left behind by crashed Claude sessions.
 
-Each Claude worktree under .claude/worktrees/ is locked while its session is live, and the lock
+Each Claude worktree is locked while its session is live, and the lock
 reason carries the session pid. A crash leaves the lock behind, and every later session skips the
 worktree as "in use by another live session" forever.
 
@@ -11,6 +11,11 @@ worktree (a finished agent's, or one made by hand) is reaped only when it is cle
 untouched for IDLE_HOURS, because finished agents leave many of them behind: they fill the disk, and
 they sit inside the repository tree, where a check that walks the tree finds files from other
 branches. A dirty or unmerged unlocked one is never touched.
+
+Every worktree git knows of is swept, wherever it sits: one made beside the repository, in the home folder or in
+/tmp is still this repository's, and a misplaced one that nothing ever removed was how ~45 copies of the repositories
+piled up beside them (2026-11-25). The repositories named in `.claude/project.json` under `worktree_repos` (paths
+from this checkout) are swept by the same rules, for the sister repositories whose worktrees this one's sessions make.
 
 Run standalone (`python3 .claude/scripts/worktree-reap.py`) or via the SessionStart hook. Exit
 status is always 0 so it never blocks a session.
@@ -52,19 +57,18 @@ def pid_alive(pid):
     return True
 
 
-def lock_pid(common_dir, worktree_name):
-    """The pid recorded in this worktree's lock file, or None if unlocked."""
-    lock_file = common_dir / "worktrees" / worktree_name / "locked"
+def lock_pid(admin):
+    """The pid recorded in this worktree's lock file (in its git admin folder), or None if unlocked."""
+    lock_file = admin / "locked"
     if not lock_file.is_file():
         return None
     match = LOCK_PID_RE.search(lock_file.read_text())
     return int(match.group(1)) if match else None
 
 
-def idle_hours(common_dir, worktree_name):
+def idle_hours(admin):
     """Hours since this worktree's HEAD or index last changed, from git's own admin files (not its reflog, which
     repository-wide housekeeping rewrites)."""
-    admin = common_dir / "worktrees" / worktree_name
     stamps = [path.stat().st_mtime for path in (admin / "HEAD", admin / "index") if path.exists()]
     return (time.time() - max(stamps)) / 3600 if stamps else 0.0
 
@@ -93,23 +97,21 @@ def process_paths(pid_dir):
     return paths
 
 
-def worktree_names(paths, worktrees_dir):
-    """The worktree names under worktrees_dir that these paths fall in (any text containing such a path counts)."""
-    marker = f"{worktrees_dir}/"
-    names = set()
-    for path in paths:
-        start = path.find(marker)
-        if start >= 0:
-            names.add(re.split(r"[/\s]", path[start + len(marker):], maxsplit=1)[0])
-    return names - {""}
+def roots_in(paths, roots):
+    """The worktree roots that these paths fall in (any text containing such a root, then a slash, a space or its
+    end, counts)."""
+    if not roots:
+        return set()
+    pattern = re.compile("(" + "|".join(re.escape(str(root)) for root in roots) + r")(?=/|\s|$)")
+    return {Path(found) for path in paths for found in pattern.findall(path)}
 
 
-def held_by_processes(worktrees_dir):
-    """Names of the worktrees some live process uses (see process_paths)."""
+def held_by_processes(roots):
+    """The worktree roots some live process uses (see process_paths)."""
     paths = []
     for pid_dir in PROC.glob("[0-9]*"):
         paths.extend(process_paths(pid_dir))
-    return worktree_names(paths, worktrees_dir)
+    return roots_in(paths, roots)
 
 
 def strings_in(value):
@@ -139,16 +141,16 @@ def this_pc_records():
     return running, paused if isinstance(paused, dict) else None
 
 
-def named_by_runs(worktrees_dir):
-    """Names of the worktrees a this-PC run names by path, or whose HEAD is the paused run's commit."""
+def named_by_runs(roots):
+    """The worktree roots a this-PC run names by path, or whose HEAD is the paused run's commit."""
     running, paused = this_pc_records()
     records = running + ([paused] if paused else [])
-    names = worktree_names([text for record in records for text in strings_in(record)], worktrees_dir)
+    named = roots_in([text for record in records for text in strings_in(record)], roots)
     commit = (paused or {}).get("commit")
-    for entry in worktrees_dir.iterdir():
-        if commit and entry.is_dir() and git_out(["rev-parse", "HEAD"], cwd=entry)[1] == commit:
-            names.add(entry.name)
-    return names
+    for root in roots:
+        if commit and git_out(["rev-parse", "HEAD"], cwd=root)[1] == commit:
+            named.add(root)
+    return named
 
 
 def is_clean(worktree_path):
@@ -159,23 +161,52 @@ def is_clean(worktree_path):
     merged worktree is kept, never that unmerged work is deleted. A missing ref keeps the worktree.
     """
     code, dirty = git_out(["status", "--porcelain"], cwd=worktree_path)
-    if code != 0 or dirty:
+    # A virtual environment left untracked is rebuilt from the lock file, not work.
+    if code != 0 or [line for line in dirty.splitlines() if line not in ("?? .venv", "?? .venv/")]:
         return False
     code, _ = git_out(["merge-base", "--is-ancestor", "HEAD", "origin/main"], cwd=worktree_path)
     return code == 0
 
 
-def remove_worktree(entry, worktrees_dir):
+def remove_worktree(entry, checkout):
     """Remove one orphan worktree and its auto-named branch; False when git refuses."""
     _, branch = git_out(["symbolic-ref", "--short", "HEAD"], cwd=entry)
-    git_out(["worktree", "unlock", str(entry)], cwd=worktrees_dir)
-    code, _ = git_out(["worktree", "remove", "--force", str(entry)], cwd=worktrees_dir)
+    git_out(["worktree", "unlock", str(entry)], cwd=checkout)
+    code, _ = git_out(["worktree", "remove", "--force", str(entry)], cwd=checkout)
     if code != 0:
         return False
     # Only the EnterWorktree "worktree-*" naming, so a meaningfully named branch is never touched.
     if branch.startswith("worktree-"):
-        git_out(["branch", "-D", branch], cwd=worktrees_dir)
+        git_out(["branch", "-D", branch], cwd=checkout)
     return True
+
+
+def linked_worktrees(checkout):
+    """Every linked worktree of the repository at checkout that is on disk: (its root, its git admin folder)."""
+    code, listing = git_out(["worktree", "list", "--porcelain"], cwd=checkout)
+    if code != 0:
+        return []
+    roots = [Path(line[len("worktree "):]) for line in listing.splitlines() if line.startswith("worktree ")]
+    found = []
+    for root in roots[1:]:  # the first is the main checkout
+        code, admin = git_out(["rev-parse", "--path-format=absolute", "--git-dir"], cwd=root) \
+            if root.is_dir() else (1, "")
+        if code == 0:
+            found.append((root.resolve(), Path(admin)))
+    return found
+
+
+def sister_checkouts(checkout):
+    """The checkouts project.json names under worktree_repos (paths from this checkout) that are git repositories."""
+    config = read_json(checkout / ".claude" / "project.json")
+    named = config.get("worktree_repos", []) if isinstance(config, dict) else []
+    found = []
+    for name in named:
+        other = (checkout / name).resolve()
+        code, top = git_out(["rev-parse", "--show-toplevel"], cwd=other) if other.is_dir() else (1, "")
+        if code == 0 and Path(top).resolve() == other:
+            found.append(other)
+    return found
 
 
 def reap():
@@ -183,30 +214,30 @@ def reap():
     common_dir = git_common_dir()
     if common_dir is None:
         return [], []
-    worktrees_dir = common_dir.parent / ".claude" / "worktrees"
-    if not worktrees_dir.is_dir():
-        return [], []
+    checkout = common_dir.parent
     self_root = Path(__file__).resolve().parents[2]
-    worktrees_dir = worktrees_dir.resolve()
-    in_use = held_by_processes(worktrees_dir) | named_by_runs(worktrees_dir)
+    trees = [(checkout, root, admin) for root, admin in linked_worktrees(checkout)]
+    for other in sister_checkouts(checkout):
+        trees += [(other, root, admin) for root, admin in linked_worktrees(other)]
+    roots = [root for _, root, _ in trees]
+    in_use = held_by_processes(roots) | named_by_runs(roots)
     reaped, kept_dirty = [], []
-    for entry in sorted(worktrees_dir.iterdir()):
-        if not entry.is_dir() or entry == self_root or entry.name in in_use:
+    for owner, entry, admin in sorted(trees, key=lambda tree: tree[1].name):
+        if entry == self_root or entry in in_use:
             continue
-        pid = lock_pid(common_dir, entry.name)
+        pid = lock_pid(admin)
         if pid is None:
-            if idle_hours(common_dir, entry.name) >= IDLE_HOURS and is_clean(entry) \
-                    and remove_worktree(entry, worktrees_dir):
+            if idle_hours(admin) >= IDLE_HOURS and is_clean(entry) and remove_worktree(entry, owner):
                 reaped.append(entry.name)
             continue
         if pid_alive(pid):
             continue
-        if is_clean(entry) and remove_worktree(entry, worktrees_dir):
+        if is_clean(entry) and remove_worktree(entry, owner):
             reaped.append(entry.name)
         else:
             kept_dirty.append(entry.name)
-    if reaped:
-        git_out(["worktree", "prune"], cwd=worktrees_dir)
+    for owner in {owner for owner, _, _ in trees}:
+        git_out(["worktree", "prune"], cwd=owner)
     return reaped, kept_dirty
 
 
